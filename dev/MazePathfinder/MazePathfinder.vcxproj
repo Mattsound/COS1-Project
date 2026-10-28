@@ -74,11 +74,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Cell.cpp" />
     <ClCompile Include="InputHelper.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Menu.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Cell.h" />
     <ClInclude Include="InputHelper.h" />
     <ClInclude Include="Menu.h" />
   </ItemGroup>
