@@ -1,7 +1,8 @@
-#include <iostream>
+#include "Menu.h"
 
 int main()
 {
-    std::cout << "Maze Pathfinder\n";
+    Menu menu;
+    menu.run();
     return 0;
 }
