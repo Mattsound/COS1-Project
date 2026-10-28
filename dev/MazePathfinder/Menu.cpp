@@ -1,5 +1,7 @@
 #include "Menu.h"
 
+#include "InputHelper.h"
+
 #include <iostream>
 
 namespace
@@ -38,8 +40,9 @@ void Menu::showMainMenu() const
 int Menu::readChoice() const
 {
     int choice = 0;
-    std::cout << "Choose an option: ";
-    std::cin >> choice;
+    if (!InputHelper::readInt("Choose an option: ", SolveMaze, Exit, choice))
+        return Exit; // input ended, so leave instead of looping forever
+
     return choice;
 }
 
@@ -58,9 +61,6 @@ void Menu::handleChoice(int choice)
         break;
     case Exit:
         m_running = false;
-        break;
-    default:
-        std::cout << "\nThat isn't a menu option. Please choose 1-4.\n";
         break;
     }
 }
