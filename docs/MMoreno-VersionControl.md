@@ -97,19 +97,25 @@ Most repositories contain a .gitignore file.
 
 Replace the example references below with your own links and recommended resources. It is acceptable to provide multiple links for a single topic and to use material provided to you in this class. You are encouraged to link to your own independent research as well.
 
-[ Research Summary: What resource(s) did you find most helpful this past week and why? ]
+**Research Summary:** The most helpful resource this week was the free *Pro Git* book on git-scm.com. Its "About Version Control" chapter explains the three types of version control with clear diagrams, and the "Git Basics" chapters walk through each command step by step. The GitHub Docs were the most useful for the HTTPS connection steps and for `.gitignore`, because they show exactly what GitHub expects and link to ready-made `.gitignore` templates like the Visual Studio one I use in my project. Setting up my own COS1 repository (cloning, committing on `dev`, and pushing) was also great hands-on practice for everything in this document.
 
 **Terminal Commands**  
-[Site Address](https://www.someaddress.com/full/url/)
+[The Linux Command Line - LinuxCommand.org](https://linuxcommand.org/lc3_learning_the_shell.php)  
+[Git Bash - Atlassian Git Tutorial](https://www.atlassian.com/git/tutorials/git-bash)
 
 **Three Types of Version Control**  
-[Site Address](https://www.someaddress.com/full/url/)
+[Pro Git: About Version Control](https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control)
 
 **Git Commands**  
-[Site Address](https://www.someaddress.com/full/url/)
+[Pro Git: Recording Changes to the Repository](https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository)  
+[Git Reference Documentation](https://git-scm.com/docs)  
+[GitHub Git Cheat Sheet](https://education.github.com/git-cheat-sheet-education.pdf)
 
 **Connecting to GitHub using Terminal**  
-[Site Address](https://www.someaddress.com/full/url/)
+[GitHub Docs: About remote repositories](https://docs.github.com/en/get-started/getting-started-with-git/about-remote-repositories)  
+[GitHub Docs: Caching your GitHub credentials in Git](https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git)
 
 **Using .gitignore and Why it's Important**  
-[Site Address](https://www.someaddress.com/full/url/)
+[GitHub Docs: Ignoring files](https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files)  
+[Git Documentation: gitignore](https://git-scm.com/docs/gitignore)  
+[GitHub .gitignore templates (VisualStudio.gitignore)](https://github.com/github/gitignore/blob/main/VisualStudio.gitignore)
