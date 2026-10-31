@@ -81,15 +81,15 @@ Most repositories contain a .gitignore file.
 
 - What is the purpose of this file?
   <br>
-  [Fill in answer here]
+  A `.gitignore` file tells Git which files and folders to leave untracked, so they never get staged or committed by accident. Each line is a pattern (like `*.log` or `build/`). This keeps the repository clean and small, holding only the source files that matter, and it keeps out machine-specific files, generated files, and sensitive files such as passwords or API keys.
 
 - What is the "**.DS_Store**" file and why would you want to ignore it?
   <br>
-  [Fill in answer here]
+  `.DS_Store` (Desktop Services Store) is a hidden file that macOS Finder automatically creates in every folder you open. It stores view settings like icon positions and sort order. It has nothing to do with the project's code, it changes constantly, and it creates pointless changes and merge conflicts for teammates (especially ones on Windows or Linux). It can also reveal the names of files in the folder, so it should always be ignored.
 
 - What other file or folder would you want to add to a .gitignore file and why?
   <br>
-  [Fill in answer here]
+  For my Visual Studio C++ project, I want to ignore the build output folders (`x64/`, `Debug/`, `Release/`), the `.vs/` folder, and user-specific files like `*.vcxproj.user`. Build outputs (`.exe`, `.obj`, `.pdb`) are generated every time I compile, they can be very large, and anyone can rebuild them from the source code. The `.vs/` folder holds my personal IDE settings and cache, which would conflict with other people's setups. My repo uses GitHub's Visual Studio `.gitignore` template, which already covers all of these.
 
 <br>
 
