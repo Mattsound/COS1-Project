@@ -49,7 +49,9 @@ Version control, also known as revision control, records changes to a file or se
 
 **1. There are three types of version control.**
 
-[ Name & describe the three types of version control here.]
+- **Local Version Control:** Everything is stored on one computer, usually in a simple database that tracks changes to files (an example is RCS). It's simple, but if that computer's drive fails, the entire history is lost, and it's hard to collaborate with anyone else.
+- **Centralized Version Control (CVCS):** One central server holds all the versioned files, and developers check files out from it (examples are Subversion/SVN and Perforce). This makes collaboration and access control easier, but the server is a single point of failure. If it goes down, nobody can commit, and if its data is lost, the history is gone.
+- **Distributed Version Control (DVCS):** Every developer has a full copy of the repository, including its entire history (examples are Git and Mercurial). You can commit, branch, and view history offline, and any clone can restore the server if something goes wrong. This is the type we use in this class with Git and GitHub.
 
 **2. Using Terminal, there are also essential Git commands to know.**
 
