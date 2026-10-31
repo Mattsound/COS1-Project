@@ -6,7 +6,7 @@ Update this document where indicated [look for the brackets!]. Replace text insi
 
 ## COS1 - Project and Portfolio I: Computer Science
 
-- **Matthew Moreno**
+- **Matt Moreno**
 - **October 31, 2026**
 
 This paper addresses some of the topic matter covered in research and activity this week. Be sure to include reference links below to the research and information you used to complete this assignment.
@@ -23,23 +23,25 @@ List the correct Terminal commands to do the actions listed below. Replace **CMD
 
 **The last bullet provides an example**.
 
-- [ CMD ]: Clear the Screen
-- [ CMD ]: Print the "Working Directory"
-- [ CMD ]: List files and folders
-- [ CMD ]: List files and folders, including invisible files
-- [ CMD ]: List all files and folders, in human readable form
-- [ CMD ]: Change directory
-- [ CMD ]: Change directory, go to root directory
-- [ CMD ]: Change directory and go to user home directory
-- [ CMD ]: Change directory, go up one folder level
-- [ CMD ]: Change directory, go up two folder levels
-- [ CMD ]: Change directory to my desktop!
+> These commands work in macOS Terminal, Linux, and Git Bash on Windows (which is what I use).
+
+- `clear`: Clear the screen (shortcut: `Ctrl + L`)
+- `pwd`: Print the "Working Directory", the full path of the folder I'm currently in
+- `ls`: List files and folders in the current directory
+- `ls -a`: List files and folders, including invisible (hidden) files that start with a dot, like `.gitignore`
+- `ls -lah`: List all files and folders in long format with human-readable sizes (KB, MB) instead of raw bytes
+- `cd folderName`: Change directory into the named folder
+- `cd /`: Change directory, go to the root directory of the file system
+- `cd ~`: Change directory and go to my user home directory (just `cd` by itself does the same thing)
+- `cd ..`: Change directory, go up one folder level to the parent folder
+- `cd ../..`: Change directory, go up two folder levels
+- `cd ~/Desktop`: Change directory to my desktop!
 
 **2. Using Terminal...**
 
 **Folder Drop:** Try typing "cd" followed by a space, and then drag a folder into terminal and press return. Test this out and describe your results below.
 
-[ Describe Results Here ]
+When I typed `cd ` and dragged a folder into the terminal window, the terminal automatically pasted the folder's full path after the command. If the path has spaces in it, it gets wrapped in quotes (or the spaces are escaped) so it still works. After pressing Return, I was moved into that folder, and running `pwd` confirmed it. This is a quick way to navigate to deeply nested folders without typing out a long path and risking typos.
 
 ## Topic: Version Control & Git
 
