@@ -1,0 +1,121 @@
+# Instructions
+
+Update this document where indicated [look for the brackets!]. Replace text inside the brackets with your own information. For example: Course Name should be the name of this course, and not the generic words "Course Name".
+
+<br>
+
+## COS1 - Project and Portfolio I: Computer Science
+
+- **Matt Moreno**
+- **October 31, 2026**
+
+This paper addresses some of the topic matter covered in research and activity this week. Be sure to include reference links below to the research and information you used to complete this assignment.
+
+## Topic: Terminal
+
+Professional developers use Terminal daily. It's essential to understand some fundamental commands to use the application.
+
+Update the information below to demonstrate your knowledge on this topic.
+
+**1. Using Terminal, there are essential commands to know.**
+
+List the correct Terminal commands to do the actions listed below. Replace **CMD** with the correct command sequence. You can keep or enhance the brief description.
+
+**The last bullet provides an example**.
+
+> These commands work in macOS Terminal, Linux, and Git Bash on Windows (which is what I use).
+
+- `clear`: Clear the screen (shortcut: `Ctrl + L`)
+- `pwd`: Print the "Working Directory", the full path of the folder I'm currently in
+- `ls`: List files and folders in the current directory
+- `ls -a`: List files and folders, including invisible (hidden) files that start with a dot, like `.gitignore`
+- `ls -lah`: List all files and folders in long format with human-readable sizes (KB, MB) instead of raw bytes
+- `cd folderName`: Change directory into the named folder
+- `cd /`: Change directory, go to the root directory of the file system
+- `cd ~`: Change directory and go to my user home directory (just `cd` by itself does the same thing)
+- `cd ..`: Change directory, go up one folder level to the parent folder
+- `cd ../..`: Change directory, go up two folder levels
+- `cd ~/Desktop`: Change directory to my desktop!
+
+**2. Using Terminal...**
+
+**Folder Drop:** Try typing "cd" followed by a space, and then drag a folder into terminal and press return. Test this out and describe your results below.
+
+When I typed `cd ` and dragged a folder into the terminal window, the terminal automatically pasted the folder's full path after the command. If the path has spaces in it, it gets wrapped in quotes (or the spaces are escaped) so it still works. After pressing Return, I was moved into that folder, and running `pwd` confirmed it. This is a quick way to navigate to deeply nested folders without typing out a long path and risking typos.
+
+## Topic: Version Control & Git
+
+Version control, also known as revision control, records changes to a file or set of files over time so that you can recall specific versions later. In this class, we are learning Git. Update the information below where indicated.
+
+**1. There are three types of version control.**
+
+- **Local Version Control:** Everything is stored on one computer, usually in a simple database that tracks changes to files (an example is RCS). It's simple, but if that computer's drive fails, the entire history is lost, and it's hard to collaborate with anyone else.
+- **Centralized Version Control (CVCS):** One central server holds all the versioned files, and developers check files out from it (examples are Subversion/SVN and Perforce). This makes collaboration and access control easier, but the server is a single point of failure. If it goes down, nobody can commit, and if its data is lost, the history is gone.
+- **Distributed Version Control (DVCS):** Every developer has a full copy of the repository, including its entire history (examples are Git and Mercurial). You can commit, branch, and view history offline, and any clone can restore the server if something goes wrong. This is the type we use in this class with Git and GitHub.
+
+**2. Using Terminal, there are also essential Git commands to know.**
+
+List the correct Git commands to do the actions listed below in Terminal. Replace CMD with the correct command and keep or enhance the brief description.
+
+- `git clone <repo-url>`: Clone a repository (downloads a full copy, including history, into a new folder)
+- `git config --global user.name "Your Name"`: Set up a global user name that is attached to every commit
+- `git config --global user.email "you@example.com"`: Set up a global email address (to match my GitHub account email so commits link to my profile)
+- `git status`: Shows the current state of your directory and staging area (which files are modified, staged, or untracked, and which branch I'm on)
+- `git add <file>` or `git add .`: Add modified files to the next commit (`.` stages everything in the current folder)
+- `git commit -m "Message"`: Make a commit with a new message describing what changed
+- `git log` (or `git log --oneline` for a compact view): Show my commit history
+- `git help` (or `git help <command>`, e.g. `git help commit`): Show Git's help screen
+
+**3. Connecting to GitHub using Terminal.**
+HTTPS is the the correct way to connect to GitHub in this course. Describe how you connect to GitHub from Terminal using this protocol. What steps do you take?
+
+1. Make sure Git is installed (`git --version`) and that my name and email are set with `git config --global`.
+2. On GitHub, open the repository, click the green **Code** button, select the **HTTPS** tab, and copy the URL (it looks like `https://github.com/username/repo-name.git`).
+3. In Terminal, `cd` to the folder where I want the project to live.
+4. Run `git clone https://github.com/username/repo-name.git` to download the repo. The clone is automatically connected to GitHub as the remote named `origin` (I can check with `git remote -v`). For an existing local project, I would instead run `git remote add origin <https-url>`.
+5. The first time I push or pull, Git asks me to sign in. On Windows, Git Credential Manager opens a browser window so I can log in to GitHub, then saves the credentials so I don't have to sign in again. (GitHub no longer accepts my account password over HTTPS, so on other setups I would use a Personal Access Token instead.)
+6. From then on, I work with `git pull` to get the latest changes and `git push` to upload my commits (for example, `git push origin dev`).
+
+**4. Using .gitignore and Why it's Important**  
+Most repositories contain a .gitignore file.
+
+- What is the purpose of this file?
+  <br>
+  A `.gitignore` file tells Git which files and folders to leave untracked, so they never get staged or committed by accident. Each line is a pattern (like `*.log` or `build/`). This keeps the repository clean and small, holding only the source files that matter, and it keeps out machine-specific files, generated files, and sensitive files such as passwords or API keys.
+
+- What is the "**.DS_Store**" file and why would you want to ignore it?
+  <br>
+  `.DS_Store` (Desktop Services Store) is a hidden file that macOS Finder automatically creates in every folder you open. It stores view settings like icon positions and sort order. It has nothing to do with the project's code, it changes constantly, and it creates pointless changes and merge conflicts for teammates (especially ones on Windows or Linux). It can also reveal the names of files in the folder, so it should always be ignored.
+
+- What other file or folder would you want to add to a .gitignore file and why?
+  <br>
+  For my Visual Studio C++ project, I want to ignore the build output folders (`x64/`, `Debug/`, `Release/`), the `.vs/` folder, and user-specific files like `*.vcxproj.user`. Build outputs (`.exe`, `.obj`, `.pdb`) are generated every time I compile, they can be very large, and anyone can rebuild them from the source code. The `.vs/` folder holds my personal IDE settings and cache, which would conflict with other people's setups. My repo uses GitHub's Visual Studio `.gitignore` template, which already covers all of these.
+
+<br>
+
+# Reference Links
+
+Replace the example references below with your own links and recommended resources. It is acceptable to provide multiple links for a single topic and to use material provided to you in this class. You are encouraged to link to your own independent research as well.
+
+**Research Summary:** The most helpful resource this week was the free *Pro Git* book on git-scm.com. Its "About Version Control" chapter explains the three types of version control with clear diagrams, and the "Git Basics" chapters walk through each command step by step. The GitHub Docs were the most useful for the HTTPS connection steps and for `.gitignore`, because they show exactly what GitHub expects and link to ready-made `.gitignore` templates like the Visual Studio one I use in my project. Setting up my own COS1 repository (cloning, committing on `dev`, and pushing) was also great hands-on practice for everything in this document.
+
+**Terminal Commands**  
+[The Linux Command Line - LinuxCommand.org](https://linuxcommand.org/lc3_learning_the_shell.php)  
+[Git Bash - Atlassian Git Tutorial](https://www.atlassian.com/git/tutorials/git-bash)
+
+**Three Types of Version Control**  
+[Pro Git: About Version Control](https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control)
+
+**Git Commands**  
+[Pro Git: Recording Changes to the Repository](https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository)  
+[Git Reference Documentation](https://git-scm.com/docs)  
+[GitHub Git Cheat Sheet](https://education.github.com/git-cheat-sheet-education.pdf)
+
+**Connecting to GitHub using Terminal**  
+[GitHub Docs: About remote repositories](https://docs.github.com/en/get-started/getting-started-with-git/about-remote-repositories)  
+[GitHub Docs: Caching your GitHub credentials in Git](https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git)
+
+**Using .gitignore and Why it's Important**  
+[GitHub Docs: Ignoring files](https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files)  
+[Git Documentation: gitignore](https://git-scm.com/docs/gitignore)  
+[GitHub .gitignore templates (VisualStudio.gitignore)](https://github.com/github/gitignore/blob/main/VisualStudio.gitignore)
