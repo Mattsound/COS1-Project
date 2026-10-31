@@ -69,7 +69,12 @@ List the correct Git commands to do the actions listed below in Terminal. Replac
 **3. Connecting to GitHub using Terminal.**
 HTTPS is the the correct way to connect to GitHub in this course. Describe how you connect to GitHub from Terminal using this protocol. What steps do you take?
 
-[ Describe the steps to connect Terminal to a GitHub repo here ]
+1. Make sure Git is installed (`git --version`) and that my name and email are set with `git config --global`.
+2. On GitHub, open the repository, click the green **Code** button, select the **HTTPS** tab, and copy the URL (it looks like `https://github.com/username/repo-name.git`).
+3. In Terminal, `cd` to the folder where I want the project to live.
+4. Run `git clone https://github.com/username/repo-name.git` to download the repo. The clone is automatically connected to GitHub as the remote named `origin` (I can check with `git remote -v`). For an existing local project, I would instead run `git remote add origin <https-url>`.
+5. The first time I push or pull, Git asks me to sign in. On Windows, Git Credential Manager opens a browser window so I can log in to GitHub, then saves the credentials so I don't have to sign in again. (GitHub no longer accepts my account password over HTTPS, so on other setups I would use a Personal Access Token instead.)
+6. From then on, I work with `git pull` to get the latest changes and `git push` to upload my commits (for example, `git push origin dev`).
 
 **4. Using .gitignore and Why it's Important**  
 Most repositories contain a .gitignore file.
