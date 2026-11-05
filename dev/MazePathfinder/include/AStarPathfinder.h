@@ -9,6 +9,7 @@ class AStarPathfinder : public Pathfinder
 {
 public:
     std::string getName() const override { return "A* Search"; }
+    std::string getShortName() const override { return "A*"; }
     PathResult findPath(Maze& maze) override;
 
 private:

@@ -27,6 +27,7 @@ public:
     virtual ~Pathfinder() = default;
 
     virtual std::string getName() const = 0;
+    virtual std::string getShortName() const = 0; // fits above a narrow maze
     virtual PathResult findPath(Maze& maze) = 0;
 
 protected:

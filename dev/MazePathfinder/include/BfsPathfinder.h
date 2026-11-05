@@ -8,5 +8,6 @@ class BfsPathfinder : public Pathfinder
 {
 public:
     std::string getName() const override { return "Breadth-First Search (BFS)"; }
+    std::string getShortName() const override { return "BFS"; }
     PathResult findPath(Maze& maze) override;
 };
