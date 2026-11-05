@@ -45,15 +45,18 @@ void Menu::showMainMenu() const
               << "        MAZE PATHFINDER\n"
               << "==============================\n"
               << "1. Solve a maze\n"
-              << "2. Play mode\n"
+              << "     Pick a maze and an algorithm, then watch it find the shortest path.\n"
+              << "2. Play mode (coming soon)\n"
+              << "     Race an AI enemy to the goal.\n"
               << "3. Compare algorithms\n"
+              << "     Run BFS and A* on the same maze and see which explores fewer cells.\n"
               << "4. Exit\n";
 }
 
 int Menu::readChoice() const
 {
     int choice = 0;
-    if (!InputHelper::readInt("Choose an option: ", SolveMaze, Exit, choice))
+    if (!InputHelper::readInt("Choose an option", SolveMaze, Exit, choice))
         return Exit; // input ended, so leave instead of looping forever
 
     return choice;
@@ -61,43 +64,52 @@ int Menu::readChoice() const
 
 void Menu::handleChoice(int choice)
 {
+    bool showedResults = false;
     switch (choice)
     {
     case SolveMaze:
-        solveMaze();
+        showedResults = solveMaze();
         break;
     case PlayMode:
-        std::cout << "\n[Play mode] Coming soon: race the AI to the goal.\n";
+        std::cout << "\nPlay mode isn't available yet. It's planned for a future update.\n"
+                  << "In the meantime, try Solve a maze (1) or Compare algorithms (3).\n";
+        showedResults = true;
         break;
     case CompareAlgorithms:
-        compareAlgorithms();
+        showedResults = compareAlgorithms();
         break;
     case Exit:
         m_running = false;
         break;
     }
+
+    // Keep results on screen until the user is ready, instead of letting the
+    // main menu push them out of view.
+    if (showedResults && m_running && !InputHelper::waitForEnter())
+        m_running = false;
 }
 
-void Menu::solveMaze()
+bool Menu::solveMaze()
 {
     if (!chooseMaze())
-        return;
+        return false;
 
     Pathfinder* pathfinder = choosePathfinder();
     if (pathfinder == nullptr)
-        return;
+        return false;
 
     std::cout << "\nHere's the maze:\n\n";
     m_maze.render();
 
     PathResult result = pathfinder->findPath(m_maze);
     showResult(*pathfinder, result);
+    return true;
 }
 
-void Menu::compareAlgorithms()
+bool Menu::compareAlgorithms()
 {
     if (!chooseMaze())
-        return;
+        return false;
 
     std::vector<PathResult> results;
     for (const auto& pathfinder : m_pathfinders)
@@ -144,7 +156,7 @@ void Menu::compareAlgorithms()
     if (!results[0].found)
     {
         std::cout << "No path exists, so every algorithm had to search every cell it could reach.\n";
-        return;
+        return true;
     }
 
     size_t fewest = 0;
@@ -172,6 +184,8 @@ void Menu::compareAlgorithms()
     });
     if (sameLength)
         std::cout << "All paths are the same length, so each algorithm found a shortest path.\n";
+
+    return true;
 }
 
 bool Menu::chooseMaze()
@@ -185,7 +199,7 @@ bool Menu::chooseMaze()
     std::cout << "0. Back to main menu\n";
 
     int choice = 0;
-    if (!InputHelper::readInt("Choose a maze: ", 0, count, choice))
+    if (!InputHelper::readInt("Choose a maze", 0, count, choice))
     {
         m_running = false; // input ended, so shut down cleanly
         return false;
@@ -214,7 +228,7 @@ Pathfinder* Menu::choosePathfinder()
     std::cout << "0. Back to main menu\n";
 
     int choice = 0;
-    if (!InputHelper::readInt("Choose an algorithm: ", 0, count, choice))
+    if (!InputHelper::readInt("Choose an algorithm", 0, count, choice))
     {
         m_running = false; // input ended, so shut down cleanly
         return nullptr;

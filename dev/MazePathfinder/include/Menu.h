@@ -19,8 +19,9 @@ private:
     int readChoice() const;
     void handleChoice(int choice);
 
-    void solveMaze();
-    void compareAlgorithms();
+    // Each returns true if it showed results (false if the user went back).
+    bool solveMaze();
+    bool compareAlgorithms();
 
     // Lets the user pick a built-in maze and loads it into m_maze.
     // Returns false if they went back or input ended.
