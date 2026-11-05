@@ -76,6 +76,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\AStarPathfinder.cpp" />
     <ClCompile Include="src\BfsPathfinder.cpp" />
     <ClCompile Include="src\Cell.cpp" />
     <ClCompile Include="src\InputHelper.cpp" />
@@ -86,6 +87,7 @@
     <ClCompile Include="src\Pathfinder.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\AStarPathfinder.h" />
     <ClInclude Include="include\BfsPathfinder.h" />
     <ClInclude Include="include\Cell.h" />
     <ClInclude Include="include\InputHelper.h" />

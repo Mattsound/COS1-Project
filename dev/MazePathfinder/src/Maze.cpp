@@ -109,6 +109,12 @@ void Maze::clearParents()
 
 void Maze::render(const std::vector<Cell*>& path) const
 {
+    for (const std::string& line : renderLines(path))
+        std::cout << "  " << line << '\n';
+}
+
+std::vector<std::string> Maze::renderLines(const std::vector<Cell*>& path) const
+{
     // Draw into text rows first so the path can be laid over the maze.
     std::vector<std::string> canvas;
     canvas.reserve(m_grid.size());
@@ -127,8 +133,7 @@ void Maze::render(const std::vector<Cell*>& path) const
             canvas[cell->getRow()][cell->getCol()] = PathSymbol;
     }
 
-    for (const std::string& line : canvas)
-        std::cout << "  " << line << '\n';
+    return canvas;
 }
 
 void Maze::clear()

@@ -16,15 +16,11 @@ PathResult BfsPathfinder::findPath(Maze& maze)
     maze.clearParents();
 
     // One flag per cell so each cell is queued at most once.
-    std::vector<bool> visited(static_cast<size_t>(maze.getRows()) * maze.getCols(), false);
-    auto indexOf = [&maze](const Cell& cell)
-    {
-        return static_cast<size_t>(cell.getRow()) * maze.getCols() + cell.getCol();
-    };
+    std::vector<bool> visited(maze.getCellCount(), false);
 
     std::queue<Cell*> frontier;
     frontier.push(start);
-    visited[indexOf(*start)] = true;
+    visited[maze.indexOf(*start)] = true;
 
     while (!frontier.empty())
     {
@@ -41,10 +37,10 @@ PathResult BfsPathfinder::findPath(Maze& maze)
 
         for (Cell* next : maze.getNeighbors(*current))
         {
-            if (visited[indexOf(*next)])
+            if (visited[maze.indexOf(*next)])
                 continue;
 
-            visited[indexOf(*next)] = true;
+            visited[maze.indexOf(*next)] = true;
             next->setParent(current);
             frontier.push(next);
         }

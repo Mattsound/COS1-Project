@@ -11,6 +11,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\AStarPathfinder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\BfsPathfinder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -37,6 +40,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\AStarPathfinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\BfsPathfinder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
