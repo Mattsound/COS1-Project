@@ -20,9 +20,25 @@ private:
     int readChoice() const;
     void handleChoice(int choice);
 
-    // Each returns true if it showed results (false if the user went back).
-    bool solveMaze();
-    bool compareAlgorithms();
+    enum class Mode
+    {
+        Solve,
+        Compare
+    };
+
+    // Picks a maze, runs the chosen mode on it, then keeps offering "What
+    // next?" (same maze another way, or a new maze) until the user returns
+    // to the main menu.
+    void runMazeSession(Mode mode);
+
+    // Run on the maze already in m_maze. solveCurrentMaze() returns false if
+    // the user went back from the algorithm picker instead.
+    bool solveCurrentMaze();
+    void compareCurrentMaze();
+
+    // Shows the "What next?" options and returns the choice (0 = main menu,
+    // which is also returned if input ended).
+    int askWhatNext();
 
     // Lets the user pick a built-in or random maze and loads it into m_maze.
     // Returns false if they went back or input ended.

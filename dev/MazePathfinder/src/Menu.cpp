@@ -21,6 +21,14 @@ namespace
         Exit = 4
     };
 
+    enum NextStep
+    {
+        BackToMainMenu = 0,
+        SolveThisMaze = 1,
+        CompareThisMaze = 2,
+        NewMaze = 3
+    };
+
     const int ColumnGap = 6; // spaces between mazes drawn side by side
 }
 
@@ -66,36 +74,85 @@ int Menu::readChoice() const
 
 void Menu::handleChoice(int choice)
 {
-    bool showedResults = false;
     switch (choice)
     {
     case SolveMaze:
-        showedResults = solveMaze();
+        runMazeSession(Mode::Solve);
         break;
     case PlayMode:
         std::cout << "\nPlay mode isn't available yet. It's planned for a future update.\n"
                   << "In the meantime, try Solve a maze (1) or Compare algorithms (3).\n";
-        showedResults = true;
+        // Keep the message on screen until the user is ready.
+        if (!InputHelper::waitForEnter())
+            m_running = false;
         break;
     case CompareAlgorithms:
-        showedResults = compareAlgorithms();
+        runMazeSession(Mode::Compare);
         break;
     case Exit:
         m_running = false;
         break;
     }
-
-    // Keep results on screen until the user is ready, instead of letting the
-    // main menu push them out of view.
-    if (showedResults && m_running && !InputHelper::waitForEnter())
-        m_running = false;
 }
 
-bool Menu::solveMaze()
+void Menu::runMazeSession(Mode mode)
 {
     if (!chooseMaze())
-        return false;
+        return;
 
+    while (m_running)
+    {
+        if (mode == Mode::Solve)
+        {
+            if (!solveCurrentMaze())
+                return; // went back from the algorithm picker
+        }
+        else
+        {
+            compareCurrentMaze();
+        }
+
+        if (!m_running)
+            return;
+
+        // The results stay on screen while the user decides what to do next.
+        switch (askWhatNext())
+        {
+        case SolveThisMaze:
+            mode = Mode::Solve;
+            break;
+        case CompareThisMaze:
+            mode = Mode::Compare;
+            break;
+        case NewMaze:
+            if (!chooseMaze())
+                return;
+            break;
+        default:
+            return; // back to the main menu
+        }
+    }
+}
+
+int Menu::askWhatNext()
+{
+    std::cout << "\nWhat next?\n"
+              << SolveThisMaze << ". Solve this maze with an algorithm\n"
+              << CompareThisMaze << ". Compare algorithms on this maze\n"
+              << NewMaze << ". Pick a new maze\n"
+              << BackToMainMenu << ". Back to main menu\n";
+
+    int choice = BackToMainMenu;
+    if (!InputHelper::readInt("Choose an option", BackToMainMenu, NewMaze, choice))
+    {
+        m_running = false; // input ended, so shut down cleanly
+        return BackToMainMenu;
+    }
+    return choice;
+}
+
+bool Menu::solveCurrentMaze()
+{
     Pathfinder* pathfinder = choosePathfinder();
     if (pathfinder == nullptr)
         return false;
@@ -116,11 +173,8 @@ bool Menu::solveMaze()
     return true;
 }
 
-bool Menu::compareAlgorithms()
+void Menu::compareCurrentMaze()
 {
-    if (!chooseMaze())
-        return false;
-
     std::vector<PathResult> results;
     for (const auto& pathfinder : m_pathfinders)
         results.push_back(pathfinder->findPath(m_maze));
@@ -135,8 +189,6 @@ bool Menu::compareAlgorithms()
         printSideBySide(results, true);
         printLegend(true);
     }
-
-    return true;
 }
 
 void Menu::printSideBySide(const std::vector<PathResult>& results, bool showExplored) const
