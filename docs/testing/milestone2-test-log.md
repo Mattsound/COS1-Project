@@ -121,3 +121,29 @@ Maze with no path:
 
 Legend: S = start, G = goal, # = wall, . = path, o = explored but not on the path
 ```
+
+## Quick options after results (#15)
+
+After results, the program shows:
+
+```
+What next?
+1. Solve this maze with an algorithm
+2. Compare algorithms on this maze
+3. Pick a new maze
+0. Back to main menu
+```
+
+| # | Steps | Expected | Actual | Pass |
+|---|---|---|---|---|
+| 27 | Solve → Medium → BFS, then `1` → A* | Solves the *same* maze with A* without picking it again | "Solving with A* Search..." on the Medium maze | ✅ |
+| 28 | Then `2` | Compares both algorithms on the same maze | Side-by-side BFS / A* on the Medium maze | ✅ |
+| 29 | Then `3` → Small | New maze, staying in Compare mode | Side-by-side BFS / A* on the Small maze | ✅ |
+| 30 | `0` at What next? | Back to the main menu | Main menu shown | ✅ |
+| 31 | `5` at What next? | Rejected | `5 isn't an option. Please enter a number from 0-3.` | ✅ |
+| 32 | `3`, then `0` at the maze picker | Back to the main menu | Main menu shown | ✅ |
+| 33 | Solve → Small, then `0` at the algorithm picker | Back to the main menu | Main menu shown | ✅ |
+| 34 | Play mode | Still shows the message and pauses | "Press Enter to return to the main menu..." | ✅ |
+| 35 | Input ends at What next? | Exits cleanly | "Thanks for playing. Goodbye!" | ✅ |
+
+The self-test still passes 27 of 27.

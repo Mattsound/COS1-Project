@@ -20,7 +20,8 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 
 | Feature | Status |
 |---|---|
-| Persistent menu with validated input, clear error messages and a pause after results | ✅ Done |
+| Persistent menu with validated input and clear error messages | ✅ Done |
+| **What next? options:** after results, solve the same maze with another algorithm, compare on it, or pick a new maze without going back to the main menu | ✅ Done |
 | **Solve a maze:** pick a built-in maze and an algorithm (BFS or A*), then see the solved path, its length and the number of cells explored | ✅ Done |
 | Detects and reports mazes with no possible path | ✅ Done |
 | **Compare algorithms:** BFS vs. A* on the same maze, drawn side by side with a stats table | ✅ Done |

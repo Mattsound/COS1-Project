@@ -12,6 +12,7 @@
 - **Automated self-test:** `MazePathfinder.exe --selftest` runs 27 checks and exits with code 1 if any fail (see the test log).
 - **Explored-cells overlay (#14):** after solving, the user can choose to see every cell the search explored (`o`) under the final path (`.`). In Compare mode the two overlays appear side by side, so you can *see* BFS flooding the maze while A* stays close to the goal. `PathResult` now stores the explored cells in order (`getCellsExplored()` returns the count, replacing the separate counter).
 - **`InputHelper::readYesNo()`:** accepts y/yes/n/no in any capitalization and explains blank or unrecognized answers.
+- **Quick options after results (#15):** Solve and Compare now run as a session on the current maze. After results, "What next?" offers: solve this maze, compare on this maze, a new maze, or the main menu. Trying A* after BFS on the same maze went from three menus to one choice, and the results stay on screen while the user decides.
 - **Refactor:** `compareAlgorithms()` went from about 80 lines to about 20 by moving the work into `printSideBySide()`, `printStatsTable()`, `printComparisonSummary()` and `printLegend()`. The overlay reuses `printSideBySide()`.
 
 ## Bugs & Challenges
@@ -33,4 +34,6 @@
 
 ## Next
 
-- Quick options after results (same maze / new maze / main menu)
+Every feature in the [Milestone 2 plan](../MMoreno-Milestone2-Planning.md) is done. Next up:
+- Milestone 3: Play mode with an AI enemy chase (#10)
+- Week 4: Save and Load (#11). The maze seed shown for random mazes is the starting point.
