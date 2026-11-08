@@ -9,7 +9,10 @@
 - **Usability (#13):** every prompt shows its valid range, errors say what was wrong, the main menu describes each option, and results stay on screen until Enter is pressed.
 - **`MazeGenerator` (#9):** random "perfect" mazes built with the recursive backtracker (a randomized depth-first search using a `std::stack`) and a seeded `std::mt19937`. Difficulty sets the size: Easy 11 x 7, Medium 21 x 11, Hard 41 x 21.
 - **Random mazes in the maze picker (#9):** pick a difficulty and the program generates a new maze and shows its seed, e.g. "Generated random maze #60376 (Hard, 41 x 21)". This works in both Solve a Maze and Compare mode.
-- **Automated self-test:** `MazePathfinder.exe --selftest` runs 21 checks and exits with code 1 if any fail (see the test log).
+- **Automated self-test:** `MazePathfinder.exe --selftest` runs 27 checks and exits with code 1 if any fail (see the test log).
+- **Explored-cells overlay (#14):** after solving, the user can choose to see every cell the search explored (`o`) under the final path (`.`). In Compare mode the two overlays appear side by side, so you can *see* BFS flooding the maze while A* stays close to the goal. `PathResult` now stores the explored cells in order (`getCellsExplored()` returns the count, replacing the separate counter).
+- **`InputHelper::readYesNo()`:** accepts y/yes/n/no in any capitalization and explains blank or unrecognized answers.
+- **Refactor:** `compareAlgorithms()` went from about 80 lines to about 20 by moving the work into `printSideBySide()`, `printStatsTable()`, `printComparisonSummary()` and `printLegend()`. The overlay reuses `printSideBySide()`.
 
 ## Bugs & Challenges
 
@@ -30,6 +33,4 @@
 
 ## Next
 
-- Explored-cells overlay (show every cell each algorithm searched)
 - Quick options after results (same maze / new maze / main menu)
-- `InputHelper::readYesNo()` and splitting `compareAlgorithms()` into smaller functions

@@ -72,3 +72,52 @@ This also covers the `Maze::loadFromLayout()` error cases that were listed as "n
 | 17 | `0` at the difficulty picker | Back to the main menu with no pause | Main menu shown | ✅ |
 | 18 | `x` then `9` at the difficulty picker | Both rejected with a clear message | `"x" isn't a whole number...`, `9 isn't an option...` | ✅ |
 | 19 | Built-in Small maze after the random maze option was added | Still works (maze picker now 0-4) | 10-move path | ✅ |
+
+## Explored-cells overlay (#14)
+
+### Self-test additions (now 27 checks, all passing)
+
+```
+  PASS  Easy (11 x 7), 100 seeds: explored lists start at S, end at G, have no repeats, and cover the path
+  PASS  Medium (21 x 11), 100 seeds: (same)
+  PASS  Hard (41 x 21), 100 seeds: (same)
+
+Maze with no path:
+  PASS  Sealed Vault: both report no path
+  PASS  Sealed Vault: both explore all 10 reachable cells before giving up
+  PASS  Sealed Vault: explored lists start at S and have no repeats
+
+27 passed, 0 failed
+```
+
+### Menu tests
+
+| # | Input | Expected | Actual | Pass |
+|---|---|---|---|---|
+| 20 | Solve → Medium → BFS → `maybe` | Explains it isn't a yes/no answer | `"maybe" isn't a yes or no answer. Please type y or n.` | ✅ |
+| 21 | Blank line at the y/n prompt | Explains what to type | `Type y for yes or n for no, then press Enter.` | ✅ |
+| 22 | `YES` (capitals) | Accepted as yes | BFS overlay drawn with `o` for explored cells and `.` for the path | ✅ |
+| 23 | Compare → Medium → `y` | Both overlays side by side | BFS fills most of the left half of the maze; A* explores only a few cells off the path | ✅ |
+| 24 | Compare → Random Easy → `n` | No overlay; goes straight to the pause | "Press Enter to return to the main menu..." | ✅ |
+| 25 | Solve → Sealed Vault → A* → `y` | Overlay shows the 10 cells it searched before giving up | All 10 cells on S's side marked `o`; the G side is untouched | ✅ |
+| 26 | Input ends at the y/n prompt | Exits cleanly | "Thanks for playing. Goodbye!" | ✅ |
+
+### Sample (Compare mode, Medium maze)
+
+```
+  BFS                        A*
+
+  #####################      #####################
+  #Soooo#o      #     #      #Soooo#       #     #
+  #.###o#o##### # ### #      #.###o# ##### # ### #
+  #.#ooo#ooooo# #   # #      #.# oo#     # #   # #
+  #.#o#######o# ### # #      #.# ####### # ### # #
+  #.#ooooooo#o#     # #      #.#       # #     # #
+  #.#######o#o####### #      #.####### # ####### #
+  #.......#.........# #      #.......#.........# #
+  #######.#.#######.# #      #######.#.#######.# #
+  #oooooo...#    oo..G#      #     o...#      ..G#
+  #####################      #####################
+
+Legend: S = start, G = goal, # = wall, . = path, o = explored but not on the path
+```

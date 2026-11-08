@@ -25,7 +25,8 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | Detects and reports mazes with no possible path | ✅ Done |
 | **Compare algorithms:** BFS vs. A* on the same maze, drawn side by side with a stats table | ✅ Done |
 | **Random mazes:** Easy, Medium or Hard, generated with the recursive backtracker and shown with their seed | ✅ Done |
-| Automated self-test (`MazePathfinder.exe --selftest`): 300 generated mazes plus layout error checks | ✅ Done |
+| **Explored-cells overlay:** see every cell each algorithm searched (`o`) under the path (`.`), side by side in Compare mode | ✅ Done |
+| Automated self-test (`MazePathfinder.exe --selftest`): 27 checks covering 300 generated mazes, explored-cell lists, the no-path maze and layout errors | ✅ Done |
 | **Play mode:** move with W/A/S/D and reach the goal before the AI enemy catches you | 📝 Milestone 3 |
 | Save and load mazes and scores to files | 📝 Milestone 4 |
 
