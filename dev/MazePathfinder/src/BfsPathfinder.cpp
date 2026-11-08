@@ -26,7 +26,7 @@ PathResult BfsPathfinder::findPath(Maze& maze)
     {
         Cell* current = frontier.front();
         frontier.pop();
-        ++result.cellsExplored;
+        result.explored.push_back(current);
 
         if (current == goal)
         {

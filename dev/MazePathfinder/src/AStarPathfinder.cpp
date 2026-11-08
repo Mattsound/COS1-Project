@@ -59,7 +59,7 @@ PathResult AStarPathfinder::findPath(Maze& maze)
             continue; // an outdated entry; this cell was already explored by a shorter route
 
         finished[index] = true;
-        ++result.cellsExplored;
+        result.explored.push_back(entry.cell);
 
         if (entry.cell == goal)
         {

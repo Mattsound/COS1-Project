@@ -150,7 +150,7 @@ bool Menu::compareAlgorithms()
             std::cout << std::setw(13) << results[i].getPathLength();
         else
             std::cout << std::setw(13) << "no path";
-        std::cout << std::setw(17) << results[i].cellsExplored << '\n';
+        std::cout << std::setw(17) << results[i].getCellsExplored() << '\n';
     }
 
     // Summary of what the numbers mean.
@@ -164,12 +164,12 @@ bool Menu::compareAlgorithms()
     size_t fewest = 0;
     for (size_t i = 1; i < results.size(); ++i)
     {
-        if (results[i].cellsExplored < results[fewest].cellsExplored)
+        if (results[i].getCellsExplored() < results[fewest].getCellsExplored())
             fewest = i;
     }
 
-    const int baseline = results[0].cellsExplored;
-    const int saved = baseline - results[fewest].cellsExplored;
+    const int baseline = results[0].getCellsExplored();
+    const int saved = baseline - results[fewest].getCellsExplored();
     if (fewest == 0 || saved == 0)
     {
         std::cout << "Every algorithm explored the same number of cells on this maze.\n";
@@ -294,12 +294,12 @@ void Menu::showResult(const Pathfinder& pathfinder, const PathResult& result) co
     if (!result.found)
     {
         std::cout << "No path exists from S to G. Walls block every route.\n"
-                  << "Cells explored: " << result.cellsExplored << '\n';
+                  << "Cells explored: " << result.getCellsExplored() << '\n';
         return;
     }
 
     m_maze.render(result.path);
     std::cout << "\nLegend: S = start, G = goal, # = wall, . = path\n"
               << "Path length:    " << result.getPathLength() << " moves\n"
-              << "Cells explored: " << result.cellsExplored << '\n';
+              << "Cells explored: " << result.getCellsExplored() << '\n';
 }
