@@ -4,6 +4,7 @@
 #include "BfsPathfinder.h"
 #include "Maze.h"
 #include "MazeGenerator.h"
+#include "MazePresets.h"
 
 #include <iostream>
 #include <string>
@@ -36,6 +37,32 @@ namespace
         return open;
     }
 
+    // The explored list must start at S, end at G when a path was found, hold
+    // each walkable cell at most once, and include every cell on the path.
+    bool exploredListIsValid(const Maze& maze, const PathResult& result)
+    {
+        if (result.explored.empty() || result.explored.front() != maze.getStart())
+            return false;
+        if (result.found && result.explored.back() != maze.getGoal())
+            return false;
+
+        std::vector<bool> seen(maze.getCellCount(), false);
+        for (const Cell* cell : result.explored)
+        {
+            size_t index = maze.indexOf(*cell);
+            if (!cell->isWalkable() || seen[index])
+                return false;
+            seen[index] = true;
+        }
+
+        for (const Cell* cell : result.path)
+        {
+            if (!seen[maze.indexOf(*cell)])
+                return false;
+        }
+        return true;
+    }
+
     // Every generated maze must be complete (all rooms connected), solvable,
     // and solved to the same length by both algorithms.
     void testGenerator(Difficulty difficulty)
@@ -51,7 +78,7 @@ namespace
         const int rooms = ((size.width - 1) / 2) * ((size.height - 1) / 2);
         const int expectedOpen = 2 * rooms - 1;
 
-        int loaded = 0, complete = 0, solvedByBoth = 0, sameLength = 0;
+        int loaded = 0, complete = 0, solvedByBoth = 0, sameLength = 0, validExplored = 0;
         for (unsigned int seed = 1; seed <= SeedsPerDifficulty; ++seed)
         {
             std::vector<std::string> layout = generator.generate(difficulty, seed);
@@ -73,6 +100,9 @@ namespace
                 if (bfsResult.getPathLength() == aStarResult.getPathLength())
                     ++sameLength;
             }
+
+            if (exploredListIsValid(maze, bfsResult) && exploredListIsValid(maze, aStarResult))
+                ++validExplored;
         }
 
         const std::string label = MazeGenerator::getName(difficulty) + " (" +
@@ -83,6 +113,7 @@ namespace
         check(complete == SeedsPerDifficulty, label + "every room is connected");
         check(solvedByBoth == SeedsPerDifficulty, label + "BFS and A* both find a path");
         check(sameLength == SeedsPerDifficulty, label + "BFS and A* paths are the same length");
+        check(validExplored == SeedsPerDifficulty, label + "explored lists start at S, end at G, have no repeats, and cover the path");
 
         MazeGenerator other;
         check(generator.generate(difficulty, 42) == other.generate(difficulty, 42),
@@ -113,6 +144,26 @@ namespace
         expectLoadError({ "#####", "#  G#", "#####" }, "Missing start is rejected");
         expectLoadError({ "#####", "#SGG#", "#####" }, "Two goals are rejected");
     }
+
+    // With no path, both searches must give up only after exploring every
+    // cell reachable from S (10 in the Sealed Vault preset).
+    void testNoPath()
+    {
+        Maze maze;
+        std::string error;
+        maze.loadFromLayout(MazePresets::getAll()[2].layout, error);
+
+        BfsPathfinder bfs;
+        AStarPathfinder aStar;
+        PathResult bfsResult = bfs.findPath(maze);
+        PathResult aStarResult = aStar.findPath(maze);
+
+        check(!bfsResult.found && !aStarResult.found, "Sealed Vault: both report no path");
+        check(bfsResult.getCellsExplored() == 10 && aStarResult.getCellsExplored() == 10,
+              "Sealed Vault: both explore all 10 reachable cells before giving up");
+        check(exploredListIsValid(maze, bfsResult) && exploredListIsValid(maze, aStarResult),
+              "Sealed Vault: explored lists start at S and have no repeats");
+    }
 }
 
 bool SelfTest::runAll()
@@ -123,6 +174,9 @@ bool SelfTest::runAll()
     testGenerator(Difficulty::Medium);
     testGenerator(Difficulty::Hard);
     testSizeRounding();
+
+    std::cout << "\nMaze with no path:\n";
+    testNoPath();
 
     std::cout << "\nMaze layout validation:\n";
     testLayoutErrors();
