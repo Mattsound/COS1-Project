@@ -1,5 +1,6 @@
 #include "InputHelper.h"
 
+#include <cctype>
 #include <iostream>
 #include <stdexcept>
 
@@ -69,6 +70,37 @@ bool InputHelper::readInt(const std::string& prompt, int min, int max, int& resu
 
         result = value;
         return true;
+    }
+}
+
+bool InputHelper::readYesNo(const std::string& prompt, bool& result)
+{
+    std::string line;
+    while (true)
+    {
+        std::cout << prompt << " (y/n): ";
+        if (!std::getline(std::cin, line))
+            return false;
+
+        std::string answer = trim(line);
+        for (char& c : answer)
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+        if (answer == "y" || answer == "yes")
+        {
+            result = true;
+            return true;
+        }
+        if (answer == "n" || answer == "no")
+        {
+            result = false;
+            return true;
+        }
+
+        if (answer.empty())
+            std::cout << "  Type y for yes or n for no, then press Enter.\n";
+        else
+            std::cout << "  \"" << trim(line) << "\" isn't a yes or no answer. Please type y or n.\n";
     }
 }
 

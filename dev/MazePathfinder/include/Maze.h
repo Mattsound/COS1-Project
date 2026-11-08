@@ -46,13 +46,14 @@ public:
     // Clears every cell's parent pointer so a new search starts fresh.
     void clearParents();
 
-    // Draws the maze in the console. Cells on the path are drawn as '.',
-    // except the start and goal, which keep their letters.
-    void render(const std::vector<Cell*>& path = {}) const;
+    // Draws the maze in the console. Cells on the path are drawn as '.' and
+    // other explored cells as 'o'; the start and goal keep their letters.
+    void render(const std::vector<Cell*>& path = {}, const std::vector<Cell*>& explored = {}) const;
 
     // The same drawing as render(), returned as text rows so callers can
     // place two mazes side by side.
-    std::vector<std::string> renderLines(const std::vector<Cell*>& path = {}) const;
+    std::vector<std::string> renderLines(const std::vector<Cell*>& path = {},
+                                         const std::vector<Cell*>& explored = {}) const;
 
 private:
     void clear();
