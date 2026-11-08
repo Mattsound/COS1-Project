@@ -24,7 +24,8 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | **Solve a maze:** pick a built-in maze and an algorithm (BFS or A*), then see the solved path, its length and the number of cells explored | ✅ Done |
 | Detects and reports mazes with no possible path | ✅ Done |
 | **Compare algorithms:** BFS vs. A* on the same maze, drawn side by side with a stats table | ✅ Done |
-| Random maze generation with difficulty levels | 📝 Milestone 2 |
+| **Random mazes:** Easy, Medium or Hard, generated with the recursive backtracker and shown with their seed | ✅ Done |
+| Automated self-test (`MazePathfinder.exe --selftest`): 300 generated mazes plus layout error checks | ✅ Done |
 | **Play mode:** move with W/A/S/D and reach the goal before the AI enemy catches you | 📝 Milestone 3 |
 | Save and load mazes and scores to files | 📝 Milestone 4 |
 
@@ -38,9 +39,10 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | `Pathfinder` | Abstract base class, so every search algorithm shares one interface | ✅ |
 | `BfsPathfinder` | Breadth-First Search, which always finds the shortest path | ✅ |
 | `AStarPathfinder` | A* search with a Manhattan-distance heuristic, which usually explores far fewer cells than BFS | ✅ |
+| `MazeGenerator` | Builds random perfect mazes from a seed with the recursive backtracker (randomized DFS) | ✅ |
 | `Player` / `Enemy` | Play mode: the user moves the player, and the enemy chases using a `Pathfinder` | 📝 |
 
-Helpers: `InputHelper` (validated console input) and `MazePresets` (built-in maze layouts).
+Helpers: `InputHelper` (validated console input), `MazePresets` (built-in maze layouts) and `SelfTest` (automated checks).
 
 ## Repository Structure
 

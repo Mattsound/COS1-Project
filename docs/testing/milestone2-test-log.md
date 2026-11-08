@@ -1,7 +1,7 @@
 # Milestone 2 Test Log (in progress)
 
 **Build:** Visual Studio 2026 (MSBuild 18, toolset v145), C++20, Debug | x64
-**Result:** Build succeeded, 0 warnings, 0 errors (10 source files)
+**Result:** Build succeeded, 0 warnings, 0 errors (12 source files)
 
 Tests were run with scripted input redirected from a text file, the same way as in [Milestone 1](milestone1-test-log.md). All Milestone 1 cases were re-run and still pass.
 
@@ -30,3 +30,45 @@ Tests were run with scripted input redirected from a text file, the same way as 
 | 12 | `0` (Back) at the maze picker | Returns straight to the menu with no pause | Main menu shown immediately | ✅ |
 | 13 | Play mode (`2`) | Explains it isn't available and suggests other options | Message plus suggestions, then the pause | ✅ |
 | 14 | Input ends at the "Press Enter" pause | Exits cleanly | "Thanks for playing. Goodbye!" | ✅ |
+
+## Random maze generation (#9)
+
+### Automated self-test
+
+Run `MazePathfinder.exe --selftest`. It prints PASS/FAIL for each check and exits with code 0 only if all of them pass.
+
+```
+Random maze generation:
+  PASS  Easy (11 x 7), 100 seeds: every maze is a valid layout
+  PASS  Easy (11 x 7), 100 seeds: every room is connected
+  PASS  Easy (11 x 7), 100 seeds: BFS and A* both find a path
+  PASS  Easy (11 x 7), 100 seeds: BFS and A* paths are the same length
+  PASS  Easy: the same seed always builds the same maze
+  (same 5 checks for Medium 21 x 11 and Hard 41 x 21)
+  PASS  Requested 4 x 6 is rounded up to 5 x 7 (sizes must be odd, at least 5)
+
+Maze layout validation:
+  PASS  Empty layout is rejected -> "The maze layout is empty."
+  PASS  Rows of different lengths are rejected -> "Row 3 is a different length than the first row."
+  PASS  Unknown character is rejected -> "Unknown character 'X' at row 2, column 3."
+  PASS  Missing start is rejected -> "A maze needs exactly one start (S) and one goal (G)."
+  PASS  Two goals are rejected -> "A maze needs exactly one start (S) and one goal (G)."
+
+21 passed, 0 failed
+```
+
+**How "every room is connected" is checked:** rooms sit at odd rows and columns. A perfect maze joins R rooms with exactly R - 1 knocked-down walls, so it must have exactly 2R - 1 open cells. A different count means part of the maze was never reached.
+
+**Testing the test:** I temporarily changed the generator so it stopped knocking down the walls between rooms. The self-test reported **9 failed** (rooms not connected, no path found) and exited with code 1. After the code was restored it went back to 21 passed.
+
+This also covers the `Maze::loadFromLayout()` error cases that were listed as "not yet tested" in Milestone 1.
+
+### Menu tests
+
+| # | Test | Expected | Actual | Pass |
+|---|---|---|---|---|
+| 15 | Compare → Random → Hard | Generates a 41 x 21 maze, shows the seed, solves it side by side | "Generated random maze #60376 (Hard, 41 x 21)", BFS 168 moves / 397 cells, A* 168 moves / 353 cells | ✅ |
+| 16 | Solve → Random → Easy → A* | Generates an 11 x 7 maze and solves it | "Generated random maze #72680 (Easy, 11 x 7)", 16-move path | ✅ |
+| 17 | `0` at the difficulty picker | Back to the main menu with no pause | Main menu shown | ✅ |
+| 18 | `x` then `9` at the difficulty picker | Both rejected with a clear message | `"x" isn't a whole number...`, `9 isn't an option...` | ✅ |
+| 19 | Built-in Small maze after the random maze option was added | Still works (maze picker now 0-4) | 10-move path | ✅ |
