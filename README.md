@@ -80,3 +80,27 @@ I leveled up on designing with an abstract base class. `Pathfinder` means A*, Co
 - Implement A* and the Compare mode (#8)
 - Add random maze generation with difficulty levels (#9)
 - Keep commits small and tied to Issues so the board and history stay accurate
+
+## Week 2
+
+### 🔎 Overview
+This week I finished everything in my Milestone 2 plan and merged it into `main`:
+- **A\* pathfinder:** uses a priority queue with a Manhattan-distance heuristic.
+- **Compare mode:** runs BFS and A* on the same maze side by side, with a stats table.
+- **Random maze generation:** a new `MazeGenerator` class using the recursive backtracker, with Easy, Medium and Hard sizes, and seeded so a maze can be recreated.
+- **Explored-cells overlay:** shows every cell each algorithm searched, so you can *see* BFS flood the maze while A* heads straight for the goal.
+- **"What next?" menu after results:** lets you try another algorithm on the same maze without going back through every menu.
+
+I also improved usability: prompts show their valid range, error messages are clearer, and there's a yes/no helper. The full write-up is in [docs/MMoreno_Milestone2.md](docs/MMoreno_Milestone2.md).
+
+### 🧟 Challenges
+- **`std::priority_queue` is a max-heap by default,** so A* kept pulling out the *worst* cell first. I fixed it with a custom comparator. A* could also queue the same cell twice, so I added a "finished" flag that skips outdated entries.
+- **The maze generator's grid math:** walls sit *between* rooms, so sizes have to be odd and every step moves two cells. Checking hundreds of mazes by eye wasn't realistic, so I wrote a `--selftest` mode. It uses the fact that a perfect maze with R rooms always has exactly 2R − 1 open cells to confirm 300 generated mazes are fully connected and solvable.
+- **GitHub board:** linking a PR with "Closes #N" moved Issues I'd already closed back to In Progress. I fixed the statuses and now reference Issues without that keyword.
+
+### 🏆 Accomplishments
+I leveled up on **testing my own code**. The self-test now runs 27 automated checks: 300 random mazes, the explored-cell lists, a maze with no path, and every layout error case. To make sure the tests could actually catch a bug, I broke the generator on purpose. The self-test reported 9 failures, then went back to 27/27 once I restored it. I also got more comfortable with abstract base classes: because BFS and A* share a `Pathfinder` interface, Compare mode and the overlay didn't need any algorithm-specific code.
+
+### 🔮 Next Steps
+- **Play mode (#10):** the player moves through the maze with W/A/S/D while an AI enemy chases them using the same pathfinding code.
+- **Save/Load (#11) in Week 4:** the maze seeds I'm already showing will make saving a maze simple.
