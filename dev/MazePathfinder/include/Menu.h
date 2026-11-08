@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Maze.h"
+#include "MazeGenerator.h"
 #include "Pathfinder.h"
 
 #include <memory>
@@ -23,9 +24,14 @@ private:
     bool solveMaze();
     bool compareAlgorithms();
 
-    // Lets the user pick a built-in maze and loads it into m_maze.
+    // Lets the user pick a built-in or random maze and loads it into m_maze.
     // Returns false if they went back or input ended.
     bool chooseMaze();
+
+    // Asks for a difficulty, then generates and loads a new random maze.
+    bool chooseRandomMaze();
+
+    bool loadLayout(const std::vector<std::string>& layout);
 
     // Lets the user pick one of m_pathfinders. Returns nullptr if they went
     // back or input ended.
@@ -34,6 +40,7 @@ private:
     void showResult(const Pathfinder& pathfinder, const PathResult& result) const;
 
     Maze m_maze;
+    MazeGenerator m_generator;
 
     // Every available algorithm, stored through the base class so the menu
     // can run any of them the same way.

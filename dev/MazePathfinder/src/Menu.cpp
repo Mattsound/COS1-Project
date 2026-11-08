@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
+#include <random>
 
 namespace
 {
@@ -45,7 +47,7 @@ void Menu::showMainMenu() const
               << "        MAZE PATHFINDER\n"
               << "==============================\n"
               << "1. Solve a maze\n"
-              << "     Pick a maze and an algorithm, then watch it find the shortest path.\n"
+              << "     Pick a built-in or random maze and an algorithm, then watch it find the shortest path.\n"
               << "2. Play mode (coming soon)\n"
               << "     Race an AI enemy to the goal.\n"
               << "3. Compare algorithms\n"
@@ -193,13 +195,16 @@ bool Menu::chooseMaze()
     const auto& presets = MazePresets::getAll();
     const int count = static_cast<int>(presets.size());
 
+    const int randomOption = count + 1;
+
     std::cout << "\nChoose a maze:\n";
     for (int i = 0; i < count; ++i)
         std::cout << i + 1 << ". " << presets[i].name << '\n';
-    std::cout << "0. Back to main menu\n";
+    std::cout << randomOption << ". Random maze (choose a difficulty)\n"
+              << "0. Back to main menu\n";
 
     int choice = 0;
-    if (!InputHelper::readInt("Choose a maze", 0, count, choice))
+    if (!InputHelper::readInt("Choose a maze", 0, randomOption, choice))
     {
         m_running = false; // input ended, so shut down cleanly
         return false;
@@ -208,13 +213,55 @@ bool Menu::chooseMaze()
     if (choice == 0)
         return false;
 
+    if (choice == randomOption)
+        return chooseRandomMaze();
+
+    return loadLayout(presets[choice - 1].layout);
+}
+
+bool Menu::chooseRandomMaze()
+{
+    const Difficulty difficulties[] = { Difficulty::Easy, Difficulty::Medium, Difficulty::Hard };
+    const int count = static_cast<int>(std::size(difficulties));
+
+    std::cout << "\nChoose a difficulty:\n";
+    for (int i = 0; i < count; ++i)
+    {
+        MazeGenerator::Size size = MazeGenerator::getSize(difficulties[i]);
+        std::cout << i + 1 << ". " << MazeGenerator::getName(difficulties[i])
+                  << " (" << size.width << " x " << size.height << ")\n";
+    }
+    std::cout << "0. Back to main menu\n";
+
+    int choice = 0;
+    if (!InputHelper::readInt("Choose a difficulty", 0, count, choice))
+    {
+        m_running = false;
+        return false;
+    }
+
+    if (choice == 0)
+        return false;
+
+    // Keep seeds short so they're easy to read and note down.
+    const unsigned int seed = std::random_device{}() % 100000;
+    const Difficulty difficulty = difficulties[choice - 1];
+    if (!loadLayout(m_generator.generate(difficulty, seed)))
+        return false;
+
+    std::cout << "\nGenerated random maze #" << seed << " (" << MazeGenerator::getName(difficulty)
+              << ", " << m_maze.getCols() << " x " << m_maze.getRows() << ")\n";
+    return true;
+}
+
+bool Menu::loadLayout(const std::vector<std::string>& layout)
+{
     std::string error;
-    if (!m_maze.loadFromLayout(presets[choice - 1].layout, error))
+    if (!m_maze.loadFromLayout(layout, error))
     {
         std::cout << "Could not load that maze: " << error << '\n';
         return false;
     }
-
     return true;
 }
 
