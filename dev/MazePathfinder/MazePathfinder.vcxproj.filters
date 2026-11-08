@@ -32,6 +32,9 @@
     <ClCompile Include="src\MazePresets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\MazeGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\Menu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -56,6 +59,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\MazePresets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MazeGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\Menu.h">
