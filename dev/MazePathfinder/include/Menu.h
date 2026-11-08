@@ -39,6 +39,17 @@ private:
 
     void showResult(const Pathfinder& pathfinder, const PathResult& result) const;
 
+    // Compare mode output, split into steps.
+    void printSideBySide(const std::vector<PathResult>& results, bool showExplored) const;
+    void printStatsTable(const std::vector<PathResult>& results) const;
+    void printComparisonSummary(const std::vector<PathResult>& results) const;
+
+    void printLegend(bool withExplored) const;
+
+    // Asks whether to show the explored-cells overlay. Returns false for "no"
+    // or if input ended (which also stops the menu).
+    bool askToShowExplored();
+
     Maze m_maze;
     MazeGenerator m_generator;
 

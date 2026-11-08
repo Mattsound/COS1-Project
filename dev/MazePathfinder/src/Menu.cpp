@@ -105,6 +105,14 @@ bool Menu::solveMaze()
 
     PathResult result = pathfinder->findPath(m_maze);
     showResult(*pathfinder, result);
+
+    if (askToShowExplored())
+    {
+        std::cout << "\nEvery cell " << pathfinder->getShortName() << " explored:\n\n";
+        m_maze.render(result.path, result.explored);
+        printLegend(true);
+    }
+
     return true;
 }
 
@@ -117,9 +125,24 @@ bool Menu::compareAlgorithms()
     for (const auto& pathfinder : m_pathfinders)
         results.push_back(pathfinder->findPath(m_maze));
 
-    // Draw every solved maze side by side, each under its algorithm's name.
-    const int mazeWidth = m_maze.getCols();
-    const int columnWidth = mazeWidth + ColumnGap;
+    printSideBySide(results, false);
+    printStatsTable(results);
+    printComparisonSummary(results);
+
+    if (askToShowExplored())
+    {
+        std::cout << "\nEvery cell each algorithm explored:\n";
+        printSideBySide(results, true);
+        printLegend(true);
+    }
+
+    return true;
+}
+
+void Menu::printSideBySide(const std::vector<PathResult>& results, bool showExplored) const
+{
+    // Each maze is drawn under its algorithm's name.
+    const int columnWidth = m_maze.getCols() + ColumnGap;
 
     std::cout << "\n  ";
     for (const auto& pathfinder : m_pathfinders)
@@ -128,7 +151,7 @@ bool Menu::compareAlgorithms()
 
     std::vector<std::vector<std::string>> drawings;
     for (const PathResult& result : results)
-        drawings.push_back(m_maze.renderLines(result.path));
+        drawings.push_back(m_maze.renderLines(result.path, showExplored ? result.explored : std::vector<Cell*>{}));
 
     for (int row = 0; row < m_maze.getRows(); ++row)
     {
@@ -137,12 +160,15 @@ bool Menu::compareAlgorithms()
             std::cout << std::left << std::setw(columnWidth) << drawing[row];
         std::cout << '\n';
     }
+}
 
-    // Stats table.
+void Menu::printStatsTable(const std::vector<PathResult>& results) const
+{
     std::cout << "\n  " << std::left << std::setw(30) << "Algorithm"
               << std::right << std::setw(13) << "Path length"
               << std::setw(17) << "Cells explored" << '\n'
               << "  " << std::string(60, '-') << '\n';
+
     for (size_t i = 0; i < results.size(); ++i)
     {
         std::cout << "  " << std::left << std::setw(30) << m_pathfinders[i]->getName() << std::right;
@@ -152,13 +178,15 @@ bool Menu::compareAlgorithms()
             std::cout << std::setw(13) << "no path";
         std::cout << std::setw(17) << results[i].getCellsExplored() << '\n';
     }
+}
 
-    // Summary of what the numbers mean.
+void Menu::printComparisonSummary(const std::vector<PathResult>& results) const
+{
     std::cout << '\n';
     if (!results[0].found)
     {
         std::cout << "No path exists, so every algorithm had to search every cell it could reach.\n";
-        return true;
+        return;
     }
 
     size_t fewest = 0;
@@ -186,8 +214,25 @@ bool Menu::compareAlgorithms()
     });
     if (sameLength)
         std::cout << "All paths are the same length, so each algorithm found a shortest path.\n";
+}
 
-    return true;
+void Menu::printLegend(bool withExplored) const
+{
+    std::cout << "\nLegend: S = start, G = goal, # = wall, . = path";
+    if (withExplored)
+        std::cout << ", o = explored but not on the path";
+    std::cout << '\n';
+}
+
+bool Menu::askToShowExplored()
+{
+    bool show = false;
+    if (!InputHelper::readYesNo("\nShow every cell the search explored?", show))
+    {
+        m_running = false; // input ended, so shut down cleanly
+        return false;
+    }
+    return show;
 }
 
 bool Menu::chooseMaze()
@@ -299,7 +344,7 @@ void Menu::showResult(const Pathfinder& pathfinder, const PathResult& result) co
     }
 
     m_maze.render(result.path);
-    std::cout << "\nLegend: S = start, G = goal, # = wall, . = path\n"
-              << "Path length:    " << result.getPathLength() << " moves\n"
+    printLegend(false);
+    std::cout << "Path length:    " << result.getPathLength() << " moves\n"
               << "Cells explored: " << result.getCellsExplored() << '\n';
 }
