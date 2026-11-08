@@ -25,6 +25,14 @@ public:
     int getRows() const { return static_cast<int>(m_grid.size()); }
     int getCols() const { return m_grid.empty() ? 0 : static_cast<int>(m_grid[0].size()); }
     bool isLoaded() const { return !m_grid.empty(); }
+    size_t getCellCount() const { return static_cast<size_t>(getRows()) * getCols(); }
+
+    // A unique number from 0 to getCellCount() - 1 for each cell, so
+    // pathfinders can keep per-cell data in a flat vector.
+    size_t indexOf(const Cell& cell) const
+    {
+        return static_cast<size_t>(cell.getRow()) * getCols() + cell.getCol();
+    }
 
     // Returns nullptr if the position is outside the grid.
     Cell* getCell(int row, int col);
@@ -38,9 +46,14 @@ public:
     // Clears every cell's parent pointer so a new search starts fresh.
     void clearParents();
 
-    // Draws the maze in the console. Cells on the path are drawn as '.',
-    // except the start and goal, which keep their letters.
-    void render(const std::vector<Cell*>& path = {}) const;
+    // Draws the maze in the console. Cells on the path are drawn as '.' and
+    // other explored cells as 'o'; the start and goal keep their letters.
+    void render(const std::vector<Cell*>& path = {}, const std::vector<Cell*>& explored = {}) const;
+
+    // The same drawing as render(), returned as text rows so callers can
+    // place two mazes side by side.
+    std::vector<std::string> renderLines(const std::vector<Cell*>& path = {},
+                                         const std::vector<Cell*>& explored = {}) const;
 
 private:
     void clear();

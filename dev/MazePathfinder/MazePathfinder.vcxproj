@@ -76,23 +76,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\AStarPathfinder.cpp" />
     <ClCompile Include="src\BfsPathfinder.cpp" />
     <ClCompile Include="src\Cell.cpp" />
     <ClCompile Include="src\InputHelper.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Maze.cpp" />
     <ClCompile Include="src\MazePresets.cpp" />
+    <ClCompile Include="src\MazeGenerator.cpp" />
     <ClCompile Include="src\Menu.cpp" />
     <ClCompile Include="src\Pathfinder.cpp" />
+    <ClCompile Include="src\SelfTest.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\AStarPathfinder.h" />
     <ClInclude Include="include\BfsPathfinder.h" />
     <ClInclude Include="include\Cell.h" />
     <ClInclude Include="include\InputHelper.h" />
     <ClInclude Include="include\Maze.h" />
     <ClInclude Include="include\MazePresets.h" />
+    <ClInclude Include="include\MazeGenerator.h" />
     <ClInclude Include="include\Menu.h" />
     <ClInclude Include="include\Pathfinder.h" />
+    <ClInclude Include="include\SelfTest.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,5 +1,6 @@
 #include "InputHelper.h"
 
+#include <cctype>
 #include <iostream>
 #include <stdexcept>
 
@@ -38,27 +39,74 @@ namespace
 
 bool InputHelper::readInt(const std::string& prompt, int min, int max, int& result)
 {
+    const std::string range = std::to_string(min) + "-" + std::to_string(max);
+
     std::string line;
     while (true)
     {
-        std::cout << prompt;
+        std::cout << prompt << " (" << range << "): ";
         if (!std::getline(std::cin, line))
             return false;
 
+        const std::string text = trim(line);
         int value = 0;
-        if (!tryParseInt(trim(line), value))
+        if (text.empty())
         {
-            std::cout << "Please enter a whole number.\n";
+            std::cout << "  Type a number from " << range << ", then press Enter.\n";
+            continue;
+        }
+
+        if (!tryParseInt(text, value))
+        {
+            std::cout << "  \"" << text << "\" isn't a whole number. Please enter a number from " << range << ".\n";
             continue;
         }
 
         if (value < min || value > max)
         {
-            std::cout << "Please enter a number from " << min << " to " << max << ".\n";
+            std::cout << "  " << value << " isn't an option. Please enter a number from " << range << ".\n";
             continue;
         }
 
         result = value;
         return true;
     }
+}
+
+bool InputHelper::readYesNo(const std::string& prompt, bool& result)
+{
+    std::string line;
+    while (true)
+    {
+        std::cout << prompt << " (y/n): ";
+        if (!std::getline(std::cin, line))
+            return false;
+
+        std::string answer = trim(line);
+        for (char& c : answer)
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+        if (answer == "y" || answer == "yes")
+        {
+            result = true;
+            return true;
+        }
+        if (answer == "n" || answer == "no")
+        {
+            result = false;
+            return true;
+        }
+
+        if (answer.empty())
+            std::cout << "  Type y for yes or n for no, then press Enter.\n";
+        else
+            std::cout << "  \"" << trim(line) << "\" isn't a yes or no answer. Please type y or n.\n";
+    }
+}
+
+bool InputHelper::waitForEnter(const std::string& prompt)
+{
+    std::cout << '\n' << prompt;
+    std::string line;
+    return static_cast<bool>(std::getline(std::cin, line));
 }

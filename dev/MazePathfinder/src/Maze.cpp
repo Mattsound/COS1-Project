@@ -6,6 +6,7 @@
 namespace
 {
     const char PathSymbol = '.';
+    const char ExploredSymbol = 'o';
 }
 
 bool Maze::loadFromLayout(const std::vector<std::string>& layout, std::string& error)
@@ -107,9 +108,17 @@ void Maze::clearParents()
             cell.setParent(nullptr);
 }
 
-void Maze::render(const std::vector<Cell*>& path) const
+void Maze::render(const std::vector<Cell*>& path, const std::vector<Cell*>& explored) const
 {
-    // Draw into text rows first so the path can be laid over the maze.
+    for (const std::string& line : renderLines(path, explored))
+        std::cout << "  " << line << '\n';
+}
+
+std::vector<std::string> Maze::renderLines(const std::vector<Cell*>& path,
+                                           const std::vector<Cell*>& explored) const
+{
+    // Draw into text rows first so explored cells, then the path, can be
+    // laid over the maze. The path goes last so it shows on top.
     std::vector<std::string> canvas;
     canvas.reserve(m_grid.size());
     for (const auto& row : m_grid)
@@ -121,14 +130,19 @@ void Maze::render(const std::vector<Cell*>& path) const
         canvas.push_back(line);
     }
 
+    for (const Cell* cell : explored)
+    {
+        if (cell->getType() == CellType::Open)
+            canvas[cell->getRow()][cell->getCol()] = ExploredSymbol;
+    }
+
     for (const Cell* cell : path)
     {
         if (cell->getType() == CellType::Open)
             canvas[cell->getRow()][cell->getCol()] = PathSymbol;
     }
 
-    for (const std::string& line : canvas)
-        std::cout << "  " << line << '\n';
+    return canvas;
 }
 
 void Maze::clear()

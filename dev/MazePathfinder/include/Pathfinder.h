@@ -11,11 +11,13 @@ class Maze;
 struct PathResult
 {
     bool found = false;
-    std::vector<Cell*> path; // start to goal, both included; empty if no path
-    int cellsExplored = 0;   // how many cells the search took off its frontier
+    std::vector<Cell*> path;     // start to goal, both included; empty if no path
+    std::vector<Cell*> explored; // every cell the search took off its frontier, in order
 
     // Number of moves from start to goal.
     int getPathLength() const { return path.empty() ? 0 : static_cast<int>(path.size()) - 1; }
+
+    int getCellsExplored() const { return static_cast<int>(explored.size()); }
 };
 
 // Base class for every search algorithm. The menu (and Compare mode later)
@@ -27,6 +29,7 @@ public:
     virtual ~Pathfinder() = default;
 
     virtual std::string getName() const = 0;
+    virtual std::string getShortName() const = 0; // fits above a narrow maze
     virtual PathResult findPath(Maze& maze) = 0;
 
 protected:

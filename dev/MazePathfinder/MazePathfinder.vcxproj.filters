@@ -11,6 +11,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\AStarPathfinder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\BfsPathfinder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -29,14 +32,23 @@
     <ClCompile Include="src\MazePresets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\MazeGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\Menu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Pathfinder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\SelfTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\AStarPathfinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\BfsPathfinder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -52,10 +64,16 @@
     <ClInclude Include="include\MazePresets.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\MazeGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\Menu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\Pathfinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SelfTest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
