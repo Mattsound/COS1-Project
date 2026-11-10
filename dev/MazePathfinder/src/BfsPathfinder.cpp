@@ -4,12 +4,10 @@
 
 #include <queue>
 
-PathResult BfsPathfinder::findPath(Maze& maze)
+PathResult BfsPathfinder::findPathBetween(Maze& maze, Cell* start, Cell* goal)
 {
     PathResult result;
 
-    Cell* start = maze.getStart();
-    Cell* goal = maze.getGoal();
     if (start == nullptr || goal == nullptr)
         return result;
 

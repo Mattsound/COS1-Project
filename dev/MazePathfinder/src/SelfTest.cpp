@@ -241,6 +241,45 @@ namespace
     }
 }
 
+namespace
+{
+    // findPathBetween() must work between any two cells, not just S and G.
+    void testPathBetween()
+    {
+        MazeGenerator generator;
+        BfsPathfinder bfs;
+        AStarPathfinder aStar;
+        std::string error;
+
+        int reversedMatches = 0;
+        for (unsigned int seed = 1; seed <= SeedsPerDifficulty; ++seed)
+        {
+            Maze maze;
+            maze.loadFromLayout(generator.generate(Difficulty::Medium, seed), error);
+
+            const int forward = bfs.findPath(maze).getPathLength();
+            PathResult bfsBack = bfs.findPathBetween(maze, maze.getGoal(), maze.getStart());
+            PathResult aStarBack = aStar.findPathBetween(maze, maze.getGoal(), maze.getStart());
+
+            bool endsRight = bfsBack.found && aStarBack.found &&
+                             bfsBack.path.front() == maze.getGoal() && bfsBack.path.back() == maze.getStart() &&
+                             aStarBack.path.front() == maze.getGoal() && aStarBack.path.back() == maze.getStart();
+            if (endsRight && bfsBack.getPathLength() == forward && aStarBack.getPathLength() == forward)
+                ++reversedMatches;
+        }
+        check(reversedMatches == SeedsPerDifficulty,
+              "Searching G to S on 100 random mazes gives a path from G to S the same length as S to G (BFS and A*)");
+
+        Maze maze;
+        maze.loadFromLayout(MazePresets::getAll()[0].layout, error);
+        PathResult same = aStar.findPathBetween(maze, maze.getStart(), maze.getStart());
+        check(same.found && same.getPathLength() == 0, "Searching from a cell to itself finds a 0-move path");
+        check(!aStar.findPathBetween(maze, nullptr, maze.getGoal()).found &&
+              !bfs.findPathBetween(maze, maze.getStart(), nullptr).found,
+              "A missing start or goal cell reports no path instead of crashing");
+    }
+}
+
 bool SelfTest::runAll()
 {
     std::cout << "MAZE PATHFINDER SELF-TEST\n\n"
@@ -252,6 +291,9 @@ bool SelfTest::runAll()
 
     std::cout << "\nMaze with no path:\n";
     testNoPath();
+
+    std::cout << "\nPaths between any two cells:\n";
+    testPathBetween();
 
     std::cout << "\nMaze layout validation:\n";
     testLayoutErrors();

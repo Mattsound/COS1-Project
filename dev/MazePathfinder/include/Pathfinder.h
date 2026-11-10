@@ -20,9 +20,9 @@ struct PathResult
     int getCellsExplored() const { return static_cast<int>(explored.size()); }
 };
 
-// Base class for every search algorithm. The menu (and Compare mode later)
-// works through this interface, so a new algorithm only has to override
-// findPath() and getName().
+// Base class for every search algorithm. The menu, Compare mode and the Play
+// mode enemy all work through this interface, so a new algorithm only has to
+// override findPathBetween() and the two name functions.
 class Pathfinder
 {
 public:
@@ -30,7 +30,14 @@ public:
 
     virtual std::string getName() const = 0;
     virtual std::string getShortName() const = 0; // fits above a narrow maze
-    virtual PathResult findPath(Maze& maze) = 0;
+
+    // Shortest path from the maze's start (S) to its goal (G).
+    PathResult findPath(Maze& maze);
+
+    // Shortest path between any two cells, e.g. from the enemy to the player.
+    // Returns a result with found == false if either cell is missing or no
+    // route connects them.
+    virtual PathResult findPathBetween(Maze& maze, Cell* start, Cell* goal) = 0;
 
 protected:
     // Follows parent pointers from the goal back to the start, then reverses
