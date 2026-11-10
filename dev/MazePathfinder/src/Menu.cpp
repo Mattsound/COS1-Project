@@ -4,6 +4,7 @@
 #include "BfsPathfinder.h"
 #include "InputHelper.h"
 #include "MazePresets.h"
+#include "Player.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -30,6 +31,12 @@ namespace
     };
 
     const int ColumnGap = 6; // spaces between mazes drawn side by side
+
+    // "1 move", "2 moves"
+    std::string movesText(int count)
+    {
+        return std::to_string(count) + (count == 1 ? " move" : " moves");
+    }
 }
 
 Menu::Menu()
@@ -56,8 +63,8 @@ void Menu::showMainMenu() const
               << "==============================\n"
               << "1. Solve a maze\n"
               << "     Pick a built-in or random maze and an algorithm, then watch it find the shortest path.\n"
-              << "2. Play mode (coming soon)\n"
-              << "     Race an AI enemy to the goal.\n"
+              << "2. Play mode\n"
+              << "     Walk from S to G yourself with W/A/S/D. (An enemy that chases you is coming soon.)\n"
               << "3. Compare algorithms\n"
               << "     Run BFS and A* on the same maze and see which explores fewer cells.\n"
               << "4. Exit\n";
@@ -80,11 +87,7 @@ void Menu::handleChoice(int choice)
         runMazeSession(Mode::Solve);
         break;
     case PlayMode:
-        std::cout << "\nPlay mode isn't available yet. It's planned for a future update.\n"
-                  << "In the meantime, try Solve a maze (1) or Compare algorithms (3).\n";
-        // Keep the message on screen until the user is ready.
-        if (!InputHelper::waitForEnter())
-            m_running = false;
+        playMaze();
         break;
     case CompareAlgorithms:
         runMazeSession(Mode::Compare);
@@ -93,6 +96,73 @@ void Menu::handleChoice(int choice)
         m_running = false;
         break;
     }
+}
+
+void Menu::playMaze()
+{
+    if (!chooseMaze())
+        return;
+
+    // Used to tell the player how close they came to the best possible run.
+    BfsPathfinder bfs;
+    const PathResult best = bfs.findPath(m_maze);
+
+    std::cout << "\nYou are P. Reach G!\n"
+              << "Move with W (up), A (left), S (down), D (right), then press Enter. Q quits.\n";
+    if (!best.found)
+        std::cout << "Heads up: walls block every route to G in this maze. Press Q when you're done exploring.\n";
+
+    const std::string help = "Use W (up), A (left), S (down), D (right), or Q to quit.";
+    Player player(m_maze.getStart());
+    bool redraw = true;
+
+    while (true)
+    {
+        if (redraw)
+        {
+            std::cout << '\n';
+            m_maze.renderWithMarkers({ { player.getCell(), 'P' } });
+            std::cout << "Moves: " << player.getMoveCount() << '\n';
+        }
+
+        char key = 0;
+        if (!InputHelper::readKey("Your move (W/A/S/D, Q to quit)", "wasdq", help, key))
+        {
+            m_running = false; // input ended, so shut down cleanly
+            return;
+        }
+
+        if (key == 'q')
+        {
+            std::cout << "\nYou left the maze after " << movesText(player.getMoveCount()) << ".\n";
+            break;
+        }
+
+        Direction direction = Direction::Up;
+        Player::parseDirection(key, direction);
+        if (!player.move(m_maze, direction))
+        {
+            // Don't redraw the whole maze just to say no.
+            std::cout << "  That way is blocked by a wall. Try another direction.\n";
+            redraw = false;
+            continue;
+        }
+        redraw = true;
+
+        if (player.getCell() == m_maze.getGoal())
+        {
+            std::cout << '\n';
+            m_maze.renderWithMarkers({ { player.getCell(), 'P' } });
+            std::cout << "\nYou reached the goal in " << movesText(player.getMoveCount()) << "! "
+                      << "The shortest possible route is " << movesText(best.getPathLength()) << ".\n";
+            if (player.getMoveCount() == best.getPathLength())
+                std::cout << "Perfect run: you matched the pathfinder!\n";
+            break;
+        }
+    }
+
+    if (!InputHelper::waitForEnter())
+        m_running = false;
 }
 
 void Menu::runMazeSession(Mode mode)

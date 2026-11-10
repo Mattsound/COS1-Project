@@ -20,6 +20,9 @@ private:
     int readChoice() const;
     void handleChoice(int choice);
 
+    // Play mode: the user walks from S to G with W/A/S/D.
+    void playMaze();
+
     enum class Mode
     {
         Solve,
