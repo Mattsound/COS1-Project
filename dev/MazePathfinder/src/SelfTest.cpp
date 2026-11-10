@@ -6,6 +6,7 @@
 #include "MazeGenerator.h"
 #include "MazePresets.h"
 #include "Enemy.h"
+#include "Game.h"
 #include "Player.h"
 
 #include <algorithm>
@@ -361,6 +362,142 @@ namespace
     }
 }
 
+namespace
+{
+    void testGameRules()
+    {
+        AStarPathfinder aStar;
+        std::string error;
+        const Game::Settings easy = Game::getSettings(Difficulty::Easy);
+        const Game::Settings medium = Game::getSettings(Difficulty::Medium);
+        const Game::Settings hard = Game::getSettings(Difficulty::Hard);
+
+        check(easy.enemyMovesEvery == 2 && easy.enemyStepsPerTurn == 1 && easy.extraHeadStart == 6 &&
+              medium.enemyMovesEvery == 1 && medium.enemyStepsPerTurn == 1 && medium.extraHeadStart == 3 &&
+              hard.enemyMovesEvery == 1 && hard.enemyStepsPerTurn == 1 && hard.extraHeadStart == 0,
+              "Difficulty settings: Easy half speed +6 turns, Medium full speed +3 turns, Hard full speed +0 turns");
+
+        // Small preset: S at (1,1), open cells to the right at (1,2) and (1,3).
+        Maze small;
+        small.loadFromLayout(MazePresets::getAll()[0].layout, error);
+
+        Game blocked(small, aStar, medium, { small.getCell(5, 1), 0 });
+        bool refused = !blocked.playTurn(Direction::Up);
+        check(refused && blocked.getTurn() == 0 && blocked.getEnemyCell() == small.getCell(5, 1) &&
+              blocked.getState() == GameState::Playing,
+              "A blocked move uses no turn and the enemy doesn't move");
+
+        Game walkInto(small, aStar, easy, { small.getCell(1, 3), 0 });
+        walkInto.playTurn(Direction::Right); // turn 1: an Easy enemy waits
+        walkInto.playTurn(Direction::Right); // turn 2: step onto the enemy
+        check(walkInto.getState() == GameState::Caught && walkInto.getTurn() == 2,
+              "Walking onto the enemy's cell is a loss");
+
+        Game easyTiming(small, aStar, easy, { small.getCell(5, 1), 0 });
+        easyTiming.playTurn(Direction::Right);
+        bool waitedOnTurn1 = easyTiming.getEnemyCell() == small.getCell(5, 1);
+        easyTiming.playTurn(Direction::Right);
+        bool movedOnTurn2 = easyTiming.getEnemyCell() != small.getCell(5, 1);
+        check(waitedOnTurn1 && movedOnTurn2, "On Easy the enemy only moves after every second turn");
+
+        Game mediumTiming(small, aStar, medium, { small.getCell(5, 1), 0 });
+        mediumTiming.playTurn(Direction::Right);
+        check(mediumTiming.getEnemyCell() != small.getCell(5, 1), "On Medium the enemy moves after every turn");
+
+        // With a 3-turn head start the enemy sleeps through turns 1-3.
+        Game sleepy(small, aStar, medium, { small.getCell(5, 1), 3 });
+        sleepy.playTurn(Direction::Right);
+        sleepy.playTurn(Direction::Right);
+        sleepy.playTurn(Direction::Down);
+        bool sleptThrough3 = sleepy.getEnemyCell() == small.getCell(5, 1) && sleepy.isEnemyAwake();
+        sleepy.playTurn(Direction::Down);
+        check(sleptThrough3 && sleepy.getEnemyCell() != small.getCell(5, 1),
+              "With a 3-turn head start the enemy sleeps for turns 1-3 and moves after turn 4");
+
+        // S G on top, open cell under S. The enemy starts under S, follows the
+        // player, and is right behind them when they step onto G.
+        Maze tiny;
+        tiny.loadFromLayout({ "S G", " ##" }, error);
+        Game photoFinish(tiny, aStar, medium, { tiny.getCell(1, 0), 0 });
+        photoFinish.playTurn(Direction::Right);
+        bool enemyRightBehind = photoFinish.getEnemyCell() == tiny.getStart();
+        photoFinish.playTurn(Direction::Right);
+        check(enemyRightBehind && photoFinish.getState() == GameState::Won,
+              "Reaching G wins even with the enemy one cell behind (the player moves first)");
+
+        Game finished(tiny, aStar, medium, { tiny.getCell(1, 0), 0 });
+        finished.playTurn(Direction::Right);
+        finished.playTurn(Direction::Right);
+        check(!finished.playTurn(Direction::Left) && finished.getTurn() == 2,
+              "No more moves are accepted after the game is over");
+
+        Maze corridor;
+        corridor.loadFromLayout({ "#######", "#S   G#", "#######" }, error);
+        check(Game::planEnemy(corridor, medium).start == nullptr,
+              "A corridor maze (every open cell on the route) is reported as having no room for an enemy");
+    }
+
+    // Every random game must be fair (winnable by walking the shortest route)
+    // but not free (a player who stalls gets caught), and the head start must
+    // be as short as possible before the difficulty's extra turns are added.
+    void testGameFairness(Difficulty difficulty)
+    {
+        MazeGenerator generator;
+        AStarPathfinder aStar;
+        const Game::Settings settings = Game::getSettings(difficulty);
+        std::string error;
+
+        int planned = 0, corridorsSkipped = 0, shortestRouteWins = 0, minimal = 0, stallingLoses = 0;
+        for (unsigned int seed = 1; seed <= SeedsPerDifficulty; ++seed)
+        {
+            // Same path the game takes: skip corridor mazes with no room for
+            // the enemy and use the next seed instead.
+            Maze maze;
+            Game::EnemyPlan plan;
+            const unsigned int usedSeed = Game::generatePlayable(generator, difficulty, seed, maze, plan);
+            if (usedSeed != seed)
+                ++corridorsSkipped;
+            if (plan.start == nullptr || plan.start->getType() != CellType::Open || plan.headStart < settings.extraHeadStart)
+                continue;
+            ++planned;
+
+            if (Game::playShortestRoute(maze, aStar, settings, plan) == GameState::Won)
+                ++shortestRouteWins;
+
+            // One turn less than the fair minimum (ignoring the extra turns)
+            // should let the enemy catch a player on the shortest route.
+            Game::EnemyPlan tighter = plan;
+            tighter.headStart = plan.headStart - settings.extraHeadStart - 1;
+            if (tighter.headStart < 0 || Game::playShortestRoute(maze, aStar, settings, tighter) == GameState::Caught)
+                ++minimal;
+
+            // Step back and forth between S and its first neighbor. The S
+            // corner always has a way out (it's where the maze was carved
+            // from), so try each direction until one works.
+            Game stall(maze, aStar, settings, plan);
+            const Direction there[] = { Direction::Right, Direction::Down };
+            const Direction back[] = { Direction::Left, Direction::Up };
+            int way = stall.playTurn(there[0]) ? 0 : (stall.playTurn(there[1]) ? 1 : -1);
+            const int turnLimit = 4 * maze.getRows() * maze.getCols();
+            for (int turn = 0; way >= 0 && turn < turnLimit && stall.getState() == GameState::Playing; ++turn)
+                stall.playTurn(turn % 2 == 0 ? back[way] : there[way]);
+
+            if (stall.getState() == GameState::Caught)
+                ++stallingLoses;
+        }
+
+        const MazeGenerator::Size size = MazeGenerator::getSize(difficulty);
+        const std::string label = MazeGenerator::getName(difficulty) + " (" + std::to_string(size.width) + " x " +
+            std::to_string(size.height) + ", " + Game::describeEnemy(settings) + "), 100 seeds: ";
+        auto outOf = [](int count) { return " (" + std::to_string(count) + "/" + std::to_string(SeedsPerDifficulty) + ")"; };
+        check(planned == SeedsPerDifficulty, label + "a playable maze with an enemy lair is always found" + outOf(planned) +
+              (corridorsSkipped > 0 ? ", skipping " + std::to_string(corridorsSkipped) + " corridor maze(s)" : ""));
+        check(shortestRouteWins == SeedsPerDifficulty, label + "walking the shortest route always wins" + outOf(shortestRouteWins));
+        check(minimal == SeedsPerDifficulty, label + "one turn less head start and the shortest route is caught" + outOf(minimal));
+        check(stallingLoses == SeedsPerDifficulty, label + "a player who stalls near S always gets caught" + outOf(stallingLoses));
+    }
+}
+
 bool SelfTest::runAll()
 {
     std::cout << "MAZE PATHFINDER SELF-TEST\n\n"
@@ -384,6 +521,14 @@ bool SelfTest::runAll()
 
     std::cout << "\nEnemy chasing:\n";
     testEnemy();
+
+    std::cout << "\nPlay mode rules:\n";
+    testGameRules();
+
+    std::cout << "\nPlay mode fairness:\n";
+    testGameFairness(Difficulty::Easy);
+    testGameFairness(Difficulty::Medium);
+    testGameFairness(Difficulty::Hard);
 
     std::cout << "\n" << g_passed << " passed, " << g_failed << " failed\n";
     return g_failed == 0;
