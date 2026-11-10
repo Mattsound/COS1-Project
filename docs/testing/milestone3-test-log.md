@@ -39,3 +39,33 @@ The edge test uses a one-row maze with no border walls (`"S G"`), so "up" really
 | 11 | Input ends mid-game | Exits cleanly | "Thanks for playing. Goodbye!" | ✅ |
 
 **Bug found and fixed while testing:** the quit message said "after 1 moves". A `movesText()` helper now picks "move" or "moves".
+
+## Enemy and searching between any two cells (#19)
+
+### Self-test additions (now 41 checks, all passing)
+
+```
+Paths between any two cells:
+  PASS  Searching G to S on 100 random mazes gives a path from G to S the same length as S to G (BFS and A*)
+  PASS  Searching from a cell to itself finds a 0-move path
+  PASS  A missing start or goal cell reports no path instead of crashing
+
+Enemy chasing:
+  PASS  Enemy (1 step/turn) gets exactly 1 move closer each turn and catches a still target in d turns on 100 mazes
+  PASS  Enemy (2 steps/turn) gets 2 moves closer each turn and catches a still target in d/2 turns (rounded up)
+  PASS  An enemy already on the target reports a catch without moving
+  PASS  Sealed Vault: an enemy walled off from the target stays put and never catches it
+  PASS  Steps per turn below 1 are raised to 1
+
+41 passed, 0 failed
+```
+
+**How "gets closer each turn" is measured:** after every enemy turn, a separate BFS measures the real distance to the target. With 1 step per turn it must drop by exactly 1, and with 2 steps by exactly 2 (or reach 0), and the enemy must always stand on an open cell.
+
+**Bug found in the test itself:** the first version used `turn <= distance + 1` as the loop limit, but `distance` shrinks every turn, so the loop quit about halfway through the chase and both chase checks failed. The fix fixes the limit once, before the loop. The `Enemy` code was correct; the test was wrong.
+
+**Testing the test:** I temporarily changed `Enemy` to always take 1 step, ignoring its speed setting. The 2-steps-per-turn check failed (40 passed, 1 failed, exit code 1), then everything went back to 41/41 once the code was restored.
+
+### Regression
+
+The refactor changed the `Pathfinder` interface that every mode uses, so I re-ran the Solve, Compare, overlay and Play menu scripts. The results were unchanged: Medium maze 30-move path, A* 40% fewer cells than BFS, perfect 10-move Play run.

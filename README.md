@@ -44,7 +44,7 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | `AStarPathfinder` | A* search with a Manhattan-distance heuristic, which usually explores far fewer cells than BFS | ✅ |
 | `MazeGenerator` | Builds random perfect mazes from a seed with the recursive backtracker (randomized DFS) | ✅ |
 | `Player` | Play mode: moves one cell at a time with W/A/S/D, refusing walls and the grid edge | ✅ |
-| `Enemy` | Play mode: chases the player using a `Pathfinder` | 📝 |
+| `Enemy` | Play mode: re-plans with a `Pathfinder` every turn and moves toward the player (speed is adjustable) | ✅ |
 
 Helpers: `InputHelper` (validated console input), `MazePresets` (built-in maze layouts) and `SelfTest` (automated checks).
 
