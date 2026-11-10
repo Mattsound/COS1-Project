@@ -5,8 +5,10 @@
 #include "Maze.h"
 #include "MazeGenerator.h"
 #include "MazePresets.h"
+#include "Enemy.h"
 #include "Player.h"
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -280,6 +282,85 @@ namespace
     }
 }
 
+namespace
+{
+    // Chases a target that stands still. Returns the number of turns it took
+    // to catch it (or -1 if it never did), and checks every turn that the
+    // enemy stood on an open cell and got exactly stepsPerTurn moves closer
+    // (or reached the target).
+    int turnsToCatch(Maze& maze, Enemy& enemy, Cell* target, bool& everyTurnValid)
+    {
+        BfsPathfinder ruler; // measures the real distance after each turn
+        everyTurnValid = true;
+        int distance = ruler.findPathBetween(maze, enemy.getCell(), target).getPathLength();
+
+        // Fix the limit up front: distance shrinks every turn, so using it in
+        // the loop condition would stop the chase halfway.
+        const int maxTurns = distance + 1;
+        for (int turn = 1; turn <= maxTurns; ++turn)
+        {
+            bool caught = enemy.takeTurn(maze, target);
+            int newDistance = ruler.findPathBetween(maze, enemy.getCell(), target).getPathLength();
+
+            int expected = std::max(0, distance - enemy.getStepsPerTurn());
+            if (!enemy.getCell()->isWalkable() || newDistance != expected || caught != (newDistance == 0))
+                everyTurnValid = false;
+
+            distance = newDistance;
+            if (caught)
+                return turn;
+        }
+        return -1;
+    }
+
+    void testEnemy()
+    {
+        MazeGenerator generator;
+        BfsPathfinder bfs;
+        AStarPathfinder aStar;
+        std::string error;
+
+        int caughtOnTime = 0, fastCaughtOnTime = 0;
+        for (unsigned int seed = 1; seed <= SeedsPerDifficulty; ++seed)
+        {
+            Maze maze;
+            maze.loadFromLayout(generator.generate(Difficulty::Medium, seed), error);
+            const int distance = bfs.findPath(maze).getPathLength();
+            bool valid = false;
+
+            Enemy enemy(maze.getGoal(), aStar, 1);
+            if (turnsToCatch(maze, enemy, maze.getStart(), valid) == distance && valid)
+                ++caughtOnTime;
+
+            Enemy fastEnemy(maze.getGoal(), aStar, 2);
+            if (turnsToCatch(maze, fastEnemy, maze.getStart(), valid) == (distance + 1) / 2 && valid)
+                ++fastCaughtOnTime;
+        }
+        check(caughtOnTime == SeedsPerDifficulty,
+              "Enemy (1 step/turn) gets exactly 1 move closer each turn and catches a still target in d turns on 100 mazes");
+        check(fastCaughtOnTime == SeedsPerDifficulty,
+              "Enemy (2 steps/turn) gets 2 moves closer each turn and catches a still target in d/2 turns (rounded up)");
+
+        Maze small;
+        small.loadFromLayout(MazePresets::getAll()[0].layout, error);
+        Enemy onTarget(small.getStart(), aStar);
+        check(onTarget.takeTurn(small, small.getStart()) && onTarget.getCell() == small.getStart(),
+              "An enemy already on the target reports a catch without moving");
+
+        Maze vault;
+        vault.loadFromLayout(MazePresets::getAll()[2].layout, error);
+        Enemy walledOff(vault.getGoal(), aStar);
+        bool neverCaught = true;
+        for (int turn = 0; turn < 5; ++turn)
+            neverCaught = !walledOff.takeTurn(vault, vault.getStart()) && neverCaught;
+        check(neverCaught && walledOff.getCell() == vault.getGoal(),
+              "Sealed Vault: an enemy walled off from the target stays put and never catches it");
+
+        Enemy clamped(small.getGoal(), aStar, 0);
+        check(clamped.getStepsPerTurn() == 1, "Steps per turn below 1 are raised to 1");
+    }
+}
+
 bool SelfTest::runAll()
 {
     std::cout << "MAZE PATHFINDER SELF-TEST\n\n"
@@ -300,6 +381,9 @@ bool SelfTest::runAll()
 
     std::cout << "\nPlayer movement:\n";
     testPlayer();
+
+    std::cout << "\nEnemy chasing:\n";
+    testEnemy();
 
     std::cout << "\n" << g_passed << " passed, " << g_failed << " failed\n";
     return g_failed == 0;

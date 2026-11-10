@@ -79,6 +79,7 @@
     <ClCompile Include="src\AStarPathfinder.cpp" />
     <ClCompile Include="src\BfsPathfinder.cpp" />
     <ClCompile Include="src\Cell.cpp" />
+    <ClCompile Include="src\Enemy.cpp" />
     <ClCompile Include="src\InputHelper.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Maze.cpp" />
@@ -93,6 +94,7 @@
     <ClInclude Include="include\AStarPathfinder.h" />
     <ClInclude Include="include\BfsPathfinder.h" />
     <ClInclude Include="include\Cell.h" />
+    <ClInclude Include="include\Enemy.h" />
     <ClInclude Include="include\InputHelper.h" />
     <ClInclude Include="include\Maze.h" />
     <ClInclude Include="include\MazePresets.h" />
