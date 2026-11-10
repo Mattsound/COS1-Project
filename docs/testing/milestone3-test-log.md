@@ -69,3 +69,63 @@ Enemy chasing:
 ### Regression
 
 The refactor changed the `Pathfinder` interface that every mode uses, so I re-ran the Solve, Compare, overlay and Play menu scripts. The results were unchanged: Medium maze 30-move path, A* 40% fewer cells than BFS, perfect 10-move Play run.
+
+## Play mode game loop (#20)
+
+### Self-test additions (now 62 checks, all passing, about 24 seconds in a Debug build)
+
+```
+Play mode rules:
+  PASS  Difficulty settings: Easy half speed +6 turns, Medium full speed +3 turns, Hard full speed +0 turns
+  PASS  A blocked move uses no turn and the enemy doesn't move
+  PASS  Walking onto the enemy's cell is a loss
+  PASS  On Easy the enemy only moves after every second turn
+  PASS  On Medium the enemy moves after every turn
+  PASS  With a 3-turn head start the enemy sleeps for turns 1-3 and moves after turn 4
+  PASS  Reaching G wins even with the enemy one cell behind (the player moves first)
+  PASS  No more moves are accepted after the game is over
+  PASS  A corridor maze (every open cell on the route) is reported as having no room for an enemy
+
+Play mode fairness (Easy, Medium and Hard, 100 random mazes each):
+  PASS  a playable maze with an enemy lair is always found (100/100; Easy skipped 3 corridor mazes)
+  PASS  walking the shortest route always wins (100/100)
+  PASS  one turn less head start and the shortest route is caught (100/100)
+  PASS  a player who stalls near S always gets caught (100/100)
+
+62 passed, 0 failed
+```
+
+The "one turn less" check proves the head start is the **exact minimum**. On Hard (0 extra turns), a perfect run escapes, but the enemy would catch it with one turn less.
+
+### End-to-end tests (real program, real input)
+
+These use `--seed 4242` so the maze is the same every run. The test script:
+1. runs Play mode and quits immediately, to read the maze from the screen
+2. finds the shortest route with its own BFS
+3. replays that route, after a few bad inputs (`x`, a blank line, `ww`)
+4. plays again while stepping back and forth next to S, to check the loss
+
+| Difficulty | Head start | Route | Win run | Stall run |
+|---|---|---|---|---|
+| Easy (11 x 7) | 12 turns | 16 moves | "You escaped in 16 turns!", "Perfect run" ✅ | "Caught on turn 51!" ✅ |
+| Medium (21 x 11) | 44 turns | 62 moves | "You escaped in 62 turns!", "Perfect run" ✅ | "Caught on turn 119!" ✅ |
+| Hard (41 x 21) | 141 turns | 200 moves | "You escaped in 200 turns!", "Perfect run" ✅ | "Caught on turn 393!" ✅ |
+
+In every run, all 3 bad inputs got a help message and the "*** E woke up! ***" alert appeared exactly once.
+
+### Other checks
+
+| Input | Expected | Actual | Pass |
+|---|---|---|---|
+| `--seed abc` | Warn and continue with random mazes | `Ignoring --seed: "abc" isn't a whole number. Using random mazes.` | ✅ |
+| Solve, Compare and overlay scripts (regression) | Unchanged results | Medium maze 30-move path, A* 40% fewer cells | ✅ |
+
+### Bugs found and fixed while building #20
+
+| Problem | How it showed up | Fix |
+|---|---|---|
+| The first self-test never finished (still running after 10 minutes) | `chooseEnemyStart` simulated a whole game (with A* every turn) for every candidate cell, plus a separate BFS for every cell | One breadth-first flood per candidate, plus a direct distance check instead of a simulation |
+| Most random games were impossible | A fair enemy start existed in only 16-56% of mazes | The sleeping-enemy head start (see the progress notes) |
+| Hard (enemy at 2 cells per turn) was almost never winnable | Same analysis: in a one-route maze, a faster chaser always catches up | Hard is now full speed with 0 spare turns, which is tight but always winnable |
+| 3 of 100 small mazes had nowhere to put the enemy | "Lair found" was 97/100 on Easy | `generatePlayable()` skips corridor mazes and uses the next seed |
+| "E is asleep for 44 turns, then enemy moves every turn." | Seen while reading the screen | `describeEnemy()` no longer starts with "enemy"; the difficulty list adds it |

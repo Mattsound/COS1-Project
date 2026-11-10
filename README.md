@@ -28,8 +28,7 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | **Random mazes:** Easy, Medium or Hard, generated with the recursive backtracker and shown with their seed | ✅ Done |
 | **Explored-cells overlay:** see every cell each algorithm searched (`o`) under the path (`.`), side by side in Compare mode | ✅ Done |
 | Automated self-test (`MazePathfinder.exe --selftest`): 27 checks covering 300 generated mazes, explored-cell lists, the no-path maze and layout errors | ✅ Done |
-| **Play mode:** walk from S to G with W/A/S/D and compare your moves to the shortest route | ✅ Done |
-| Play mode enemy that chases you with A*, win/lose and difficulty | 🚧 Milestone 3 |
+| **Play mode:** reach G with W/A/S/D before an enemy that chases you with A* catches you; Easy, Medium or Hard, always winnable | ✅ Done |
 | Save and load mazes and scores to files | 📝 Milestone 4 |
 
 ## Class Plan
@@ -45,6 +44,7 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | `MazeGenerator` | Builds random perfect mazes from a seed with the recursive backtracker (randomized DFS) | ✅ |
 | `Player` | Play mode: moves one cell at a time with W/A/S/D, refusing walls and the grid edge | ✅ |
 | `Enemy` | Play mode: re-plans with a `Pathfinder` every turn and moves toward the player (speed is adjustable) | ✅ |
+| `Game` | Play mode rules (turns, win/lose, difficulty) and a fair enemy start with a calculated head start; no console I/O, so it can be self-tested | ✅ |
 
 Helpers: `InputHelper` (validated console input), `MazePresets` (built-in maze layouts) and `SelfTest` (automated checks).
 
@@ -60,6 +60,10 @@ images/    screenshots
 
 1. Open `dev/MazePathfinder.sln` in Visual Studio 2022 or newer.
 2. Select the **x64** platform and press **Ctrl + F5**.
+
+**Command-line options** (run `dev\x64\Debug\MazePathfinder.exe` from a terminal):
+- `--selftest`: runs the automated checks and exits with code 0 if all pass
+- `--seed 12345`: every random maze uses this seed, so a maze can be shared or replayed
 
 ---
 
