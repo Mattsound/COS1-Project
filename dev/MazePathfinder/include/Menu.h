@@ -13,15 +13,24 @@ class Menu
 public:
     Menu();
 
+    // Makes every random maze use this seed instead of a random one, so a
+    // maze can be shared or a test can replay it exactly.
+    void setFixedSeed(unsigned int seed) { m_fixedSeed = seed; m_hasFixedSeed = true; }
+
     void run();
 
 private:
+    unsigned int nextSeed() const;
+
     void showMainMenu() const;
     int readChoice() const;
     void handleChoice(int choice);
 
-    // Play mode: the user walks from S to G with W/A/S/D.
+    // Play mode: pick a difficulty, then play random mazes against the enemy
+    // until the user goes back to the main menu.
     void playMaze();
+    bool choosePlayDifficulty(Difficulty& difficulty);
+    void playOneGame(Difficulty difficulty);
 
     enum class Mode
     {
@@ -77,4 +86,6 @@ private:
     std::vector<std::unique_ptr<Pathfinder>> m_pathfinders;
 
     bool m_running = true;
+    bool m_hasFixedSeed = false;
+    unsigned int m_fixedSeed = 0;
 };

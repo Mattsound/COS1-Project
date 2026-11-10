@@ -488,7 +488,7 @@ namespace
 
         const MazeGenerator::Size size = MazeGenerator::getSize(difficulty);
         const std::string label = MazeGenerator::getName(difficulty) + " (" + std::to_string(size.width) + " x " +
-            std::to_string(size.height) + ", " + Game::describeEnemy(settings) + "), 100 seeds: ";
+            std::to_string(size.height) + ", enemy " + Game::describeEnemy(settings) + "), 100 seeds: ";
         auto outOf = [](int count) { return " (" + std::to_string(count) + "/" + std::to_string(SeedsPerDifficulty) + ")"; };
         check(planned == SeedsPerDifficulty, label + "a playable maze with an enemy lair is always found" + outOf(planned) +
               (corridorsSkipped > 0 ? ", skipping " + std::to_string(corridorsSkipped) + " corridor maze(s)" : ""));

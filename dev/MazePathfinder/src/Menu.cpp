@@ -2,6 +2,7 @@
 
 #include "AStarPathfinder.h"
 #include "BfsPathfinder.h"
+#include "Game.h"
 #include "InputHelper.h"
 #include "MazePresets.h"
 #include "Player.h"
@@ -32,10 +33,10 @@ namespace
 
     const int ColumnGap = 6; // spaces between mazes drawn side by side
 
-    // "1 move", "2 moves"
-    std::string movesText(int count)
+    // "1 move", "2 turns"
+    std::string countText(int count, const std::string& word)
     {
-        return std::to_string(count) + (count == 1 ? " move" : " moves");
+        return std::to_string(count) + " " + word + (count == 1 ? "" : "s");
     }
 }
 
@@ -43,6 +44,12 @@ Menu::Menu()
 {
     m_pathfinders.push_back(std::make_unique<BfsPathfinder>());
     m_pathfinders.push_back(std::make_unique<AStarPathfinder>());
+}
+
+unsigned int Menu::nextSeed() const
+{
+    // Keep seeds short so they're easy to read and note down.
+    return m_hasFixedSeed ? m_fixedSeed : std::random_device{}() % 100000;
 }
 
 void Menu::run()
@@ -64,7 +71,7 @@ void Menu::showMainMenu() const
               << "1. Solve a maze\n"
               << "     Pick a built-in or random maze and an algorithm, then watch it find the shortest path.\n"
               << "2. Play mode\n"
-              << "     Walk from S to G yourself with W/A/S/D. (An enemy that chases you is coming soon.)\n"
+              << "     Reach G before the enemy catches you. It always knows the shortest way to you.\n"
               << "3. Compare algorithms\n"
               << "     Run BFS and A* on the same maze and see which explores fewer cells.\n"
               << "4. Exit\n";
@@ -100,29 +107,104 @@ void Menu::handleChoice(int choice)
 
 void Menu::playMaze()
 {
-    if (!chooseMaze())
+    Difficulty difficulty = Difficulty::Medium;
+    if (!choosePlayDifficulty(difficulty))
         return;
 
-    // Used to tell the player how close they came to the best possible run.
-    BfsPathfinder bfs;
-    const PathResult best = bfs.findPath(m_maze);
+    while (m_running)
+    {
+        playOneGame(difficulty);
+        if (!m_running)
+            return;
 
-    std::cout << "\nYou are P. Reach G!\n"
-              << "Move with W (up), A (left), S (down), D (right), then press Enter. Q quits.\n";
-    if (!best.found)
-        std::cout << "Heads up: walls block every route to G in this maze. Press Q when you're done exploring.\n";
+        std::cout << "\nWhat next?\n"
+                  << "1. Play again (new " << MazeGenerator::getName(difficulty) << " maze)\n"
+                  << "2. Change difficulty\n"
+                  << "0. Back to main menu\n";
+
+        int choice = 0;
+        if (!InputHelper::readInt("Choose an option", 0, 2, choice))
+        {
+            m_running = false;
+            return;
+        }
+
+        if (choice == 0)
+            return;
+        if (choice == 2 && !choosePlayDifficulty(difficulty))
+            return;
+    }
+}
+
+bool Menu::choosePlayDifficulty(Difficulty& difficulty)
+{
+    const Difficulty difficulties[] = { Difficulty::Easy, Difficulty::Medium, Difficulty::Hard };
+    const int count = static_cast<int>(std::size(difficulties));
+
+    std::cout << "\nChoose a difficulty:\n";
+    for (int i = 0; i < count; ++i)
+    {
+        MazeGenerator::Size size = MazeGenerator::getSize(difficulties[i]);
+        std::cout << i + 1 << ". " << MazeGenerator::getName(difficulties[i])
+                  << " (" << size.width << " x " << size.height << ", enemy "
+                  << Game::describeEnemy(Game::getSettings(difficulties[i])) << ")\n";
+    }
+    std::cout << "0. Back to main menu\n";
+
+    int choice = 0;
+    if (!InputHelper::readInt("Choose a difficulty", 0, count, choice))
+    {
+        m_running = false;
+        return false;
+    }
+    if (choice == 0)
+        return false;
+
+    difficulty = difficulties[choice - 1];
+    return true;
+}
+
+void Menu::playOneGame(Difficulty difficulty)
+{
+    const Game::Settings settings = Game::getSettings(difficulty);
+    Game::EnemyPlan plan;
+    const unsigned int seed = Game::generatePlayable(m_generator, difficulty,
+                                                     nextSeed(), m_maze, plan);
+    if (plan.start == nullptr)
+    {
+        std::cout << "\nCouldn't build a playable maze this time. Please try again.\n";
+        return;
+    }
+
+    AStarPathfinder enemyBrain;
+    Game game(m_maze, enemyBrain, settings, plan);
+    BfsPathfinder ruler; // measures how far away the enemy is
+    const int shortestRoute = ruler.findPath(m_maze).getPathLength();
+
+    std::cout << "\nMaze #" << seed << " (" << MazeGenerator::getName(difficulty) << ", "
+              << m_maze.getCols() << " x " << m_maze.getRows() << ")\n"
+              << "You are P. Reach G before the enemy (E) catches you!\n"
+              << "E is asleep for " << countText(game.getHeadStart(), "turn") << ", then it "
+              << Game::describeEnemy(settings) << ".\n"
+              << "It always knows the shortest way to you, so watch out for dead ends.\n";
 
     const std::string help = "Use W (up), A (left), S (down), D (right), or Q to quit.";
-    Player player(m_maze.getStart());
     bool redraw = true;
+    bool wasAwake = game.isEnemyAwake();
 
-    while (true)
+    while (game.getState() == GameState::Playing)
     {
         if (redraw)
         {
             std::cout << '\n';
-            m_maze.renderWithMarkers({ { player.getCell(), 'P' } });
-            std::cout << "Moves: " << player.getMoveCount() << '\n';
+            m_maze.renderWithMarkers({ { game.getEnemyCell(), 'E' }, { game.getPlayerCell(), 'P' } });
+
+            std::cout << "Turn " << game.getTurn() << " | ";
+            if (!game.isEnemyAwake())
+                std::cout << "E wakes up in " << countText(game.getHeadStart() - game.getTurn(), "turn") << '\n';
+            else
+                std::cout << "E is " << countText(ruler.findPathBetween(m_maze, game.getEnemyCell(), game.getPlayerCell()).getPathLength(), "move")
+                          << " away\n";
         }
 
         char key = 0;
@@ -134,13 +216,13 @@ void Menu::playMaze()
 
         if (key == 'q')
         {
-            std::cout << "\nYou left the maze after " << movesText(player.getMoveCount()) << ".\n";
-            break;
+            std::cout << "\nYou gave up on turn " << game.getTurn() << ".\n";
+            return;
         }
 
         Direction direction = Direction::Up;
         Player::parseDirection(key, direction);
-        if (!player.move(m_maze, direction))
+        if (!game.playTurn(direction))
         {
             // Don't redraw the whole maze just to say no.
             std::cout << "  That way is blocked by a wall. Try another direction.\n";
@@ -149,20 +231,26 @@ void Menu::playMaze()
         }
         redraw = true;
 
-        if (player.getCell() == m_maze.getGoal())
-        {
-            std::cout << '\n';
-            m_maze.renderWithMarkers({ { player.getCell(), 'P' } });
-            std::cout << "\nYou reached the goal in " << movesText(player.getMoveCount()) << "! "
-                      << "The shortest possible route is " << movesText(best.getPathLength()) << ".\n";
-            if (player.getMoveCount() == best.getPathLength())
-                std::cout << "Perfect run: you matched the pathfinder!\n";
-            break;
-        }
+        if (!wasAwake && game.isEnemyAwake() && game.getState() == GameState::Playing)
+            std::cout << "\n*** E woke up! ***\n";
+        wasAwake = game.isEnemyAwake();
     }
 
-    if (!InputHelper::waitForEnter())
-        m_running = false;
+    std::cout << '\n';
+    if (game.getState() == GameState::Won)
+    {
+        m_maze.renderWithMarkers({ { game.getEnemyCell(), 'E' }, { game.getPlayerCell(), 'P' } });
+        std::cout << "\nYou escaped in " << countText(game.getTurn(), "turn") << "! "
+                  << "The shortest route was " << countText(shortestRoute, "move") << ".\n";
+        if (game.getTurn() == shortestRoute)
+            std::cout << "Perfect run: you matched the pathfinder!\n";
+    }
+    else
+    {
+        m_maze.renderWithMarkers({ { game.getPlayerCell(), 'X' } });
+        std::cout << "\nCaught on turn " << game.getTurn() << "! (X marks the spot.)\n"
+                  << "Tip: the enemy always takes the shortest way to you, so a wrong turn into a dead end costs you.\n";
+    }
 }
 
 void Menu::runMazeSession(Mode mode)
@@ -410,8 +498,7 @@ bool Menu::chooseRandomMaze()
     if (choice == 0)
         return false;
 
-    // Keep seeds short so they're easy to read and note down.
-    const unsigned int seed = std::random_device{}() % 100000;
+    const unsigned int seed = nextSeed();
     const Difficulty difficulty = difficulties[choice - 1];
     if (!loadLayout(m_generator.generate(difficulty, seed)))
         return false;

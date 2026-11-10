@@ -60,11 +60,11 @@ std::string Game::describeEnemy(const Settings& settings)
 {
     std::string text;
     if (settings.enemyMovesEvery > 1)
-        text = "enemy moves every other turn";
+        text = "moves every other turn";
     else if (settings.enemyStepsPerTurn > 1)
-        text = "enemy moves " + std::to_string(settings.enemyStepsPerTurn) + " cells per turn";
+        text = "moves " + std::to_string(settings.enemyStepsPerTurn) + " cells per turn";
     else
-        text = "enemy moves every turn";
+        text = "moves every turn";
 
     return text + (settings.extraHeadStart == 0 ? ", no room for mistakes" : "");
 }
