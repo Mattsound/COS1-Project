@@ -5,6 +5,7 @@
 #include "Maze.h"
 #include "MazeGenerator.h"
 #include "MazePresets.h"
+#include "Player.h"
 
 #include <iostream>
 #include <string>
@@ -166,6 +167,80 @@ namespace
     }
 }
 
+namespace
+{
+    bool parsesTo(char key, Direction expected)
+    {
+        Direction direction;
+        return Player::parseDirection(key, direction) && direction == expected;
+    }
+
+    // The direction that moves from one cell to a neighboring cell.
+    Direction directionBetween(const Cell& from, const Cell& to)
+    {
+        if (to.getRow() < from.getRow()) return Direction::Up;
+        if (to.getRow() > from.getRow()) return Direction::Down;
+        if (to.getCol() < from.getCol()) return Direction::Left;
+        return Direction::Right;
+    }
+
+    void testPlayer()
+    {
+        Direction unused;
+        check(parsesTo('w', Direction::Up) && parsesTo('W', Direction::Up) &&
+              parsesTo('a', Direction::Left) && parsesTo('S', Direction::Down) && parsesTo('d', Direction::Right),
+              "W/A/S/D map to up/left/down/right in either case");
+        check(!Player::parseDirection('x', unused) && !Player::parseDirection('1', unused) &&
+              !Player::parseDirection(' ', unused),
+              "Other keys are not treated as moves");
+
+        // Small preset: S is at row 1, column 1 with walls above and to the left.
+        Maze maze;
+        std::string error;
+        maze.loadFromLayout(MazePresets::getAll()[0].layout, error);
+        Player player(maze.getStart());
+
+        bool blocked = !player.move(maze, Direction::Up) && !player.move(maze, Direction::Left);
+        check(blocked && player.getCell() == maze.getStart() && player.getMoveCount() == 0,
+              "Moving into a wall is refused, the player stays put, and no move is counted");
+
+        bool moved = player.move(maze, Direction::Right);
+        check(moved && player.getCell() == maze.getCell(1, 2) && player.getMoveCount() == 1,
+              "Moving into an open cell works and counts as one move");
+
+        // A one-row maze with no border walls, so "up" would leave the grid.
+        Maze edgeMaze;
+        edgeMaze.loadFromLayout({ "S G" }, error);
+        Player edgePlayer(edgeMaze.getStart());
+        check(!edgePlayer.move(edgeMaze, Direction::Up) && !edgePlayer.move(edgeMaze, Direction::Left) &&
+              edgePlayer.getCell() == edgeMaze.getStart(),
+              "Moving off the edge of the grid is refused");
+
+        // Follow BFS's shortest path one move at a time on random mazes. The
+        // player should reach G in exactly as many moves as the path length.
+        MazeGenerator generator;
+        BfsPathfinder bfs;
+        int reachedGoal = 0;
+        for (unsigned int seed = 1; seed <= SeedsPerDifficulty; ++seed)
+        {
+            Maze randomMaze;
+            randomMaze.loadFromLayout(generator.generate(Difficulty::Medium, seed), error);
+            PathResult result = bfs.findPath(randomMaze);
+
+            Player walker(randomMaze.getStart());
+            bool everyMoveWorked = true;
+            for (size_t i = 1; i < result.path.size(); ++i)
+                everyMoveWorked = walker.move(randomMaze, directionBetween(*result.path[i - 1], *result.path[i])) && everyMoveWorked;
+
+            if (everyMoveWorked && walker.getCell() == randomMaze.getGoal() &&
+                walker.getMoveCount() == result.getPathLength())
+                ++reachedGoal;
+        }
+        check(reachedGoal == SeedsPerDifficulty,
+              "Walking BFS's path on 100 random mazes reaches G in exactly the path length");
+    }
+}
+
 bool SelfTest::runAll()
 {
     std::cout << "MAZE PATHFINDER SELF-TEST\n\n"
@@ -180,6 +255,9 @@ bool SelfTest::runAll()
 
     std::cout << "\nMaze layout validation:\n";
     testLayoutErrors();
+
+    std::cout << "\nPlayer movement:\n";
+    testPlayer();
 
     std::cout << "\n" << g_passed << " passed, " << g_failed << " failed\n";
     return g_failed == 0;
