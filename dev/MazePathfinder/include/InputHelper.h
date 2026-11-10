@@ -15,6 +15,12 @@ namespace InputHelper
     // "(y/n)" is added to the prompt. Returns false only if input has ended.
     bool readYesNo(const std::string& prompt, bool& result);
 
+    // Keeps asking until the user types exactly one of the keys in validKeys
+    // (any capitalization), then stores it in lowercase. Shows help after
+    // anything else. Returns false only if input has ended.
+    bool readKey(const std::string& prompt, const std::string& validKeys,
+                 const std::string& help, char& result);
+
     // Waits for the user to press Enter so results stay on screen until
     // they're done reading. Returns false if input has ended.
     bool waitForEnter(const std::string& prompt = "Press Enter to return to the main menu...");

@@ -145,6 +145,19 @@ std::vector<std::string> Maze::renderLines(const std::vector<Cell*>& path,
     return canvas;
 }
 
+void Maze::renderWithMarkers(const std::vector<Marker>& markers) const
+{
+    std::vector<std::string> canvas = renderLines();
+    for (const Marker& marker : markers)
+    {
+        if (marker.cell != nullptr)
+            canvas[marker.cell->getRow()][marker.cell->getCol()] = marker.symbol;
+    }
+
+    for (const std::string& line : canvas)
+        std::cout << "  " << line << '\n';
+}
+
 void Maze::clear()
 {
     m_grid.clear();

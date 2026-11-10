@@ -104,6 +104,34 @@ bool InputHelper::readYesNo(const std::string& prompt, bool& result)
     }
 }
 
+bool InputHelper::readKey(const std::string& prompt, const std::string& validKeys,
+                          const std::string& help, char& result)
+{
+    std::string line;
+    while (true)
+    {
+        std::cout << prompt << ": ";
+        if (!std::getline(std::cin, line))
+            return false;
+
+        const std::string text = trim(line);
+        if (text.size() == 1)
+        {
+            char key = static_cast<char>(std::tolower(static_cast<unsigned char>(text[0])));
+            if (validKeys.find(key) != std::string::npos)
+            {
+                result = key;
+                return true;
+            }
+        }
+
+        if (text.empty())
+            std::cout << "  " << help << '\n';
+        else
+            std::cout << "  \"" << text << "\" isn't a valid key. " << help << '\n';
+    }
+}
+
 bool InputHelper::waitForEnter(const std::string& prompt)
 {
     std::cout << '\n' << prompt;
