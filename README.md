@@ -28,7 +28,8 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | **Random mazes:** Easy, Medium or Hard, generated with the recursive backtracker and shown with their seed | ✅ Done |
 | **Explored-cells overlay:** see every cell each algorithm searched (`o`) under the path (`.`), side by side in Compare mode | ✅ Done |
 | Automated self-test (`MazePathfinder.exe --selftest`): 27 checks covering 300 generated mazes, explored-cell lists, the no-path maze and layout errors | ✅ Done |
-| **Play mode:** move with W/A/S/D and reach the goal before the AI enemy catches you | 📝 Milestone 3 |
+| **Play mode:** walk from S to G with W/A/S/D and compare your moves to the shortest route | ✅ Done |
+| Play mode enemy that chases you with A*, win/lose and difficulty | 🚧 Milestone 3 |
 | Save and load mazes and scores to files | 📝 Milestone 4 |
 
 ## Class Plan
@@ -42,7 +43,8 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | `BfsPathfinder` | Breadth-First Search, which always finds the shortest path | ✅ |
 | `AStarPathfinder` | A* search with a Manhattan-distance heuristic, which usually explores far fewer cells than BFS | ✅ |
 | `MazeGenerator` | Builds random perfect mazes from a seed with the recursive backtracker (randomized DFS) | ✅ |
-| `Player` / `Enemy` | Play mode: the user moves the player, and the enemy chases using a `Pathfinder` | 📝 |
+| `Player` | Play mode: moves one cell at a time with W/A/S/D, refusing walls and the grid edge | ✅ |
+| `Enemy` | Play mode: chases the player using a `Pathfinder` | 📝 |
 
 Helpers: `InputHelper` (validated console input), `MazePresets` (built-in maze layouts) and `SelfTest` (automated checks).
 
