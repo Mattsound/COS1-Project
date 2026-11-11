@@ -111,3 +111,30 @@ I leveled up on **testing my own code**. The self-test now runs 27 automated che
 ### 🔮 Next Steps
 - **Play mode (#10):** the player moves through the maze with W/A/S/D while an AI enemy chases them using the same pathfinding code.
 - **Save/Load (#11) in Week 4:** the maze seeds I'm already showing will make saving a maze simple.
+
+## Week 3
+
+### 🔎 Overview
+This week I finished **Play mode** and spent the rest of the week on **reliability**:
+- **Play mode (#10):** you move P with W/A/S/D and try to reach G before an enemy catches you. It's built from three new classes:
+  - `Player`: movement, refusing walls and the grid edge
+  - `Enemy`: re-plans with A* every turn
+  - `Game`: the rules, with no console input or output, so the self-test can play thousands of games
+- **Pathfinder refactor (#19):** the enemy needs to chase the *player*, not G, so the algorithms can now search between any two cells.
+- **Refactor (#21):** `Menu.cpp` went from 477 to 364 lines. A new `ResultView` class prints all the results, and three pieces of duplicated code are gone.
+- **Edge-case tests (#22):** the self-test went from 27 checks at the start of Week 2 to **76**.
+
+### 🧟 Challenges
+- **Most games were impossible to win.** Random mazes have exactly one route to G, so an enemy as fast as you could usually cut you off. A fair start existed in only 16–56% of mazes. My fix: the enemy sleeps in its lair, and the game calculates the *smallest* head start that still lets a perfect run escape, then adds spare turns by difficulty (Easy +6, Medium +3, Hard +0). The self-test proves it on 300 mazes: the shortest route always wins, and one turn less gets you caught.
+- **A self-test that never finished.** My first fairness check simulated a whole game for every possible enemy start. I replaced it with one distance calculation per cell, and it now takes seconds.
+- **Bugs I found by testing:**
+  - a test whose loop limit shrank every turn
+  - a few tiny mazes that were just one corridor with nowhere to put the enemy
+  - typing `99999999999` said "isn't a whole number" (it's now "too large")
+
+### 🏆 Accomplishments
+I leveled up on **refactoring safely**. Before changing anything, I saved the exact output of 12 scripted sessions plus the self-test, using fixed maze seeds so random mazes repeat exactly. After each refactoring step I compared everything **byte for byte**, and it stayed identical every time, which proves the structure changed without changing the behavior. I also learned that C++ builds class members in the order they're declared. That mattered, because `ResultView` holds references to other `Menu` members.
+
+### 🔮 Next Steps
+- **Week 4: Save and Load (#11).** Save mazes (seed and size, or the full layout for custom mazes), and handle missing or broken files without crashing.
+- Final documentation, the showcase, and the final Pull Request.
