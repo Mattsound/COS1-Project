@@ -10,7 +10,9 @@
 #include "Player.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <iostream>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -489,6 +491,121 @@ namespace
     }
 }
 
+namespace
+{
+    // A legal path starts at S, ends at G, and every step moves to an
+    // adjacent open cell (no jumping, no walking through walls).
+    bool pathIsValid(const Maze& maze, const PathResult& result)
+    {
+        if (!result.found || result.path.front() != maze.getStart() || result.path.back() != maze.getGoal())
+            return false;
+
+        for (size_t i = 1; i < result.path.size(); ++i)
+        {
+            const Cell& a = *result.path[i - 1];
+            const Cell& b = *result.path[i];
+            int distance = std::abs(a.getRow() - b.getRow()) + std::abs(a.getCol() - b.getCol());
+            if (distance != 1 || !b.isWalkable())
+                return false;
+        }
+        return true;
+    }
+
+    // Generated mazes have exactly one route. Knocking down some extra walls
+    // between rooms adds loops, so there are many routes to choose from.
+    std::vector<std::string> addLoops(std::vector<std::string> layout, unsigned int seed)
+    {
+        std::mt19937 random(seed);
+        std::uniform_int_distribution<int> oneIn(0, 3);
+        for (size_t row = 1; row + 1 < layout.size(); ++row)
+        {
+            for (size_t col = 1; col + 1 < layout[row].size(); ++col)
+            {
+                // Walls between two rooms sit where exactly one coordinate is even.
+                bool betweenRooms = (row + col) % 2 == 1;
+                if (betweenRooms && layout[row][col] == '#' && oneIn(random) == 0)
+                    layout[row][col] = ' ';
+            }
+        }
+        return layout;
+    }
+
+    void testMazeEdgeCases()
+    {
+        MazeGenerator generator;
+        BfsPathfinder bfs;
+        AStarPathfinder aStar;
+        AStarPathfinder enemyBrain;
+        std::string error;
+
+        // Smallest possible generated maze: 5 x 5 has 4 rooms.
+        int tinyOk = 0;
+        for (unsigned int seed = 1; seed <= SeedsPerDifficulty; ++seed)
+        {
+            Maze tiny;
+            if (tiny.loadFromLayout(generator.generate(5, 5, seed), error) &&
+                pathIsValid(tiny, bfs.findPath(tiny)) && pathIsValid(tiny, aStar.findPath(tiny)))
+                ++tinyOk;
+        }
+        check(tinyOk == SeedsPerDifficulty, "Smallest maze (5 x 5), 100 seeds: always loads and both algorithms find a legal path");
+
+        // Start right next to the goal.
+        Maze adjacent;
+        adjacent.loadFromLayout({ "#####", "#SG #", "#####" }, error);
+        PathResult bfsAdjacent = bfs.findPath(adjacent);
+        PathResult aStarAdjacent = aStar.findPath(adjacent);
+        check(pathIsValid(adjacent, bfsAdjacent) && bfsAdjacent.getPathLength() == 1 &&
+              pathIsValid(adjacent, aStarAdjacent) && aStarAdjacent.getPathLength() == 1,
+              "Start next to goal: both algorithms find the 1-move path");
+
+        const Game::Settings medium = Game::getSettings(Difficulty::Medium);
+        Game::EnemyPlan adjacentPlan = Game::planEnemy(adjacent, medium);
+        Game oneStep(adjacent, enemyBrain, medium, adjacentPlan);
+        oneStep.playTurn(Direction::Right);
+        check(adjacentPlan.start == adjacent.getCell(1, 3) && oneStep.getState() == GameState::Won && oneStep.getTurn() == 1,
+              "Start next to goal in Play mode: the enemy gets the only spare cell and one move wins");
+
+        // Goal sealed in by walls on every side.
+        Maze enclosed;
+        enclosed.loadFromLayout({ "#######", "#S  ###", "#   #G#", "#   ###", "#######" }, error);
+        check(!bfs.findPath(enclosed).found && !aStar.findPath(enclosed).found &&
+              Game::planEnemy(enclosed, medium).start == nullptr,
+              "Goal enclosed by walls: no path is found and Play mode refuses to place an enemy");
+
+        // A room with no inner walls: the shortest path is the straight-line
+        // grid distance, (5-1) rows + (9-1) columns = 12 moves.
+        Maze open;
+        open.loadFromLayout({ "###########", "#S        #", "#         #", "#         #", "#         #", "#        G#", "###########" }, error);
+        PathResult bfsOpen = bfs.findPath(open);
+        PathResult aStarOpen = aStar.findPath(open);
+        check(pathIsValid(open, bfsOpen) && bfsOpen.getPathLength() == 12 &&
+              pathIsValid(open, aStarOpen) && aStarOpen.getPathLength() == 12 &&
+              aStarOpen.getCellsExplored() < bfsOpen.getCellsExplored(),
+              "Open room (many equal routes): both find a 12-move path, and A* explores fewer cells");
+
+        // Mazes with loops: BFS and A* may pick different routes, but they
+        // must be equally short and legal.
+        int loopsOk = 0, loopsAdded = 0;
+        for (unsigned int seed = 1; seed <= SeedsPerDifficulty; ++seed)
+        {
+            std::vector<std::string> perfect = generator.generate(Difficulty::Medium, seed);
+            std::vector<std::string> looped = addLoops(perfect, seed);
+            if (looped != perfect)
+                ++loopsAdded;
+
+            Maze maze;
+            maze.loadFromLayout(looped, error);
+            PathResult b = bfs.findPath(maze);
+            PathResult a = aStar.findPath(maze);
+            if (pathIsValid(maze, b) && pathIsValid(maze, a) && a.getPathLength() == b.getPathLength() &&
+                exploredListIsValid(maze, b) && exploredListIsValid(maze, a))
+                ++loopsOk;
+        }
+        check(loopsAdded == SeedsPerDifficulty && loopsOk == SeedsPerDifficulty,
+              "Mazes with loops, 100 seeds: BFS and A* paths are legal and the same length");
+    }
+}
+
 bool SelfTest::runAll()
 {
     std::cout << "MAZE PATHFINDER SELF-TEST\n\n"
@@ -520,6 +637,9 @@ bool SelfTest::runAll()
     testGameFairness(Difficulty::Easy);
     testGameFairness(Difficulty::Medium);
     testGameFairness(Difficulty::Hard);
+
+    std::cout << "\nMaze edge cases:\n";
+    testMazeEdgeCases();
 
     std::cout << "\n" << g_passed << " passed, " << g_failed << " failed\n";
     return g_failed == 0;
