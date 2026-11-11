@@ -3,6 +3,7 @@
 #include "Maze.h"
 #include "MazeGenerator.h"
 #include "Pathfinder.h"
+#include "ResultView.h"
 
 #include <memory>
 #include <vector>
@@ -65,15 +66,6 @@ private:
     // back or input ended.
     Pathfinder* choosePathfinder();
 
-    void showResult(const Pathfinder& pathfinder, const PathResult& result) const;
-
-    // Compare mode output, split into steps.
-    void printSideBySide(const std::vector<PathResult>& results, bool showExplored) const;
-    void printStatsTable(const std::vector<PathResult>& results) const;
-    void printComparisonSummary(const std::vector<PathResult>& results) const;
-
-    void printLegend(bool withExplored) const;
-
     // Asks whether to show the explored-cells overlay. Returns false for "no"
     // or if input ended (which also stops the menu).
     bool askToShowExplored();
@@ -84,6 +76,10 @@ private:
     // Every available algorithm, stored through the base class so the menu
     // can run any of them the same way.
     std::vector<std::unique_ptr<Pathfinder>> m_pathfinders;
+
+    // Prints results. Declared after m_maze and m_pathfinders because it keeps
+    // references to them, and members are built in declaration order.
+    ResultView m_view;
 
     bool m_running = true;
     bool m_hasFixedSeed = false;

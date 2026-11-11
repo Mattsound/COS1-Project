@@ -89,6 +89,7 @@
     <ClCompile Include="src\Menu.cpp" />
     <ClCompile Include="src\Pathfinder.cpp" />
     <ClCompile Include="src\Player.cpp" />
+    <ClCompile Include="src\ResultView.cpp" />
     <ClCompile Include="src\SelfTest.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -104,6 +105,7 @@
     <ClInclude Include="include\Menu.h" />
     <ClInclude Include="include\Pathfinder.h" />
     <ClInclude Include="include\Player.h" />
+    <ClInclude Include="include\ResultView.h" />
     <ClInclude Include="include\SelfTest.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
