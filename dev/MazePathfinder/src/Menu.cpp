@@ -43,6 +43,33 @@ Menu::Menu()
     m_pathfinders.push_back(std::make_unique<AStarPathfinder>());
 }
 
+// Each ask...() works like the InputHelper function it wraps, but if input
+// ends (Ctrl+Z / end of file) it also stops the menu, so callers only have to
+// check the return value instead of repeating that cleanup everywhere.
+bool Menu::askInt(const std::string& prompt, int min, int max, int& result)
+{
+    if (InputHelper::readInt(prompt, min, max, result))
+        return true;
+    m_running = false;
+    return false;
+}
+
+bool Menu::askKey(const std::string& prompt, const std::string& validKeys, const std::string& help, char& result)
+{
+    if (InputHelper::readKey(prompt, validKeys, help, result))
+        return true;
+    m_running = false;
+    return false;
+}
+
+bool Menu::askYesNo(const std::string& prompt, bool& result)
+{
+    if (InputHelper::readYesNo(prompt, result))
+        return true;
+    m_running = false;
+    return false;
+}
+
 unsigned int Menu::nextSeed() const
 {
     // Keep seeds short so they're easy to read and note down.
@@ -120,11 +147,8 @@ void Menu::playMaze()
                   << "0. Back to main menu\n";
 
         int choice = 0;
-        if (!InputHelper::readInt("Choose an option", 0, 2, choice))
-        {
-            m_running = false;
+        if (!askInt("Choose an option", 0, 2, choice))
             return;
-        }
 
         if (choice == 0)
             return;
@@ -149,11 +173,8 @@ bool Menu::choosePlayDifficulty(Difficulty& difficulty)
     std::cout << "0. Back to main menu\n";
 
     int choice = 0;
-    if (!InputHelper::readInt("Choose a difficulty", 0, count, choice))
-    {
-        m_running = false;
+    if (!askInt("Choose a difficulty", 0, count, choice))
         return false;
-    }
     if (choice == 0)
         return false;
 
@@ -205,11 +226,8 @@ void Menu::playOneGame(Difficulty difficulty)
         }
 
         char key = 0;
-        if (!InputHelper::readKey("Your move (W/A/S/D, Q to quit)", "wasdq", help, key))
-        {
-            m_running = false; // input ended, so shut down cleanly
+        if (!askKey("Your move (W/A/S/D, Q to quit)", "wasdq", help, key))
             return;
-        }
 
         if (key == 'q')
         {
@@ -298,11 +316,8 @@ int Menu::askWhatNext()
               << BackToMainMenu << ". Back to main menu\n";
 
     int choice = BackToMainMenu;
-    if (!InputHelper::readInt("Choose an option", BackToMainMenu, NewMaze, choice))
-    {
-        m_running = false; // input ended, so shut down cleanly
+    if (!askInt("Choose an option", BackToMainMenu, NewMaze, choice))
         return BackToMainMenu;
-    }
     return choice;
 }
 
@@ -339,12 +354,7 @@ void Menu::compareCurrentMaze()
 bool Menu::askToShowExplored()
 {
     bool show = false;
-    if (!InputHelper::readYesNo("\nShow every cell the search explored?", show))
-    {
-        m_running = false; // input ended, so shut down cleanly
-        return false;
-    }
-    return show;
+    return askYesNo("\nShow every cell the search explored?", show) && show;
 }
 
 bool Menu::chooseMaze()
@@ -361,11 +371,8 @@ bool Menu::chooseMaze()
               << "0. Back to main menu\n";
 
     int choice = 0;
-    if (!InputHelper::readInt("Choose a maze", 0, randomOption, choice))
-    {
-        m_running = false; // input ended, so shut down cleanly
+    if (!askInt("Choose a maze", 0, randomOption, choice))
         return false;
-    }
 
     if (choice == 0)
         return false;
@@ -391,11 +398,8 @@ bool Menu::chooseRandomMaze()
     std::cout << "0. Back to main menu\n";
 
     int choice = 0;
-    if (!InputHelper::readInt("Choose a difficulty", 0, count, choice))
-    {
-        m_running = false;
+    if (!askInt("Choose a difficulty", 0, count, choice))
         return false;
-    }
 
     if (choice == 0)
         return false;
@@ -431,11 +435,8 @@ Pathfinder* Menu::choosePathfinder()
     std::cout << "0. Back to main menu\n";
 
     int choice = 0;
-    if (!InputHelper::readInt("Choose an algorithm", 0, count, choice))
-    {
-        m_running = false; // input ended, so shut down cleanly
+    if (!askInt("Choose an algorithm", 0, count, choice))
         return nullptr;
-    }
 
     if (choice == 0)
         return nullptr;

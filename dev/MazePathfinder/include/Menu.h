@@ -23,6 +23,12 @@ public:
 private:
     unsigned int nextSeed() const;
 
+    // Validated input that also stops the menu if input ends. Each returns
+    // false only in that case, so callers just back out.
+    bool askInt(const std::string& prompt, int min, int max, int& result);
+    bool askKey(const std::string& prompt, const std::string& validKeys, const std::string& help, char& result);
+    bool askYesNo(const std::string& prompt, bool& result);
+
     void showMainMenu() const;
     int readChoice() const;
     void handleChoice(int choice);
