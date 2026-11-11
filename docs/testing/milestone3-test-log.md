@@ -129,3 +129,28 @@ In every run, all 3 bad inputs got a help message and the "*** E woke up! ***" a
 | Hard (enemy at 2 cells per turn) was almost never winnable | Same analysis: in a one-route maze, a faster chaser always catches up | Hard is now full speed with 0 spare turns, which is tight but always winnable |
 | 3 of 100 small mazes had nowhere to put the enemy | "Lair found" was 97/100 on Easy | `generatePlayable()` skips corridor mazes and uses the next seed |
 | "E is asleep for 44 turns, then enemy moves every turn." | Seen while reading the screen | `describeEnemy()` no longer starts with "enemy"; the difficulty list adds it |
+
+## Refactor: `Menu` cleanup (#21)
+
+Refactoring must not change what the user sees, so this was tested by **comparing output before and after**, not by adding new checks.
+
+### Method
+1. Before touching any code, I ran 12 scripted menu sessions plus the self-test and saved the exact output as a **baseline**. Every session uses a fixed `--seed`, so random mazes come out the same each time. The sessions cover:
+   - Solve / Compare / What next?
+   - the explored overlay with yes/no validation
+   - random mazes
+   - bad input at the main menu
+   - input ending at four different prompts
+   - Play mode wins and losses on Easy, Medium and Hard
+2. After **each** refactoring step I rebuilt, re-ran all 13, and compared every file **byte for byte** against the baseline.
+
+### Results
+
+| Step | Commit | Menu runs identical | Self-test |
+|---|---|---|---|
+| Move display into `ResultView` | `cc92715` | 12 / 12 | 62 / 62 |
+| Share the input-ended handling (`askInt` / `askKey` / `askYesNo`) | `0a8c9ab` | 12 / 12 | 62 / 62 |
+| One shared difficulty picker | `0573960` | 12 / 12 | 62 / 62 |
+| `directionBetween()` moved to `Player` | `57aad12` | 12 / 12 | 62 / 62, and the full output is identical |
+
+Every step produced exactly the same output as the original program, so the refactor changed the structure without changing the behavior.

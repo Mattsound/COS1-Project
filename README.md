@@ -35,7 +35,8 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 
 | Class | Responsibility | Status |
 |---|---|---|
-| `Menu` | Runs the main menu loop and sends each choice to the right feature | ✅ |
+| `Menu` | Runs the main menu loop, reads choices, and decides what happens next in each mode | ✅ |
+| `ResultView` | Prints Solve and Compare results: solved mazes, the explored overlay, side-by-side mazes and the stats table | ✅ |
 | `Cell` | One square of the maze: position, type (open, wall, start, goal) and a parent pointer used to rebuild paths | ✅ |
 | `Maze` | Owns the `vector<vector<Cell>>` grid. Builds it from a text layout, finds walkable neighbors and draws itself as ASCII | ✅ |
 | `Pathfinder` | Abstract base class, so every search algorithm shares one interface | ✅ |

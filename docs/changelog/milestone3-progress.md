@@ -10,7 +10,7 @@ Week 3 focus: finishing **Play mode** (#10) and making the program **reliable** 
 | #19 | `Enemy` class that chases the player using A* | ✅ Done |
 | #20 | Play mode game loop with win/lose and difficulty | ✅ Done |
 | #10 | Play mode (parent of #18-#20) | ✅ Done |
-| #21 | Refactor: move result and Compare display out of `Menu` | 📥 Backlog |
+| #21 | Refactor: move result and Compare display out of `Menu` | ✅ Done |
 | #22 | Edge-case tests: tiny mazes, start next to goal, mazes with loops | 📥 Backlog |
 
 ## Completed so far
@@ -56,3 +56,18 @@ The self-test proves both directions on 300 mazes: the shortest route **always w
 - `Player` only knows how to move, `Enemy` only knows how to chase, and `Game` only knows the rules. None of them read input or draw anything, so the self-test can play complete games without a keyboard. `Menu` is the only place that talks to the console.
 - `Enemy` takes any `Pathfinder&`. The game gives it A*, but the tests prove the rules hold no matter which algorithm drives it.
 EOF
+
+## Refactor (#21)
+
+`Menu.cpp` had grown to **477 lines and 22 functions**, and it did three jobs: input, program flow, and formatting results. It also had repeated code.
+
+| Problem | Change | Commit |
+|---|---|---|
+| `Menu` formatted every result itself | New **`ResultView`** class prints solved mazes, the explored overlay, the side-by-side comparison, the stats table, the summary and the legend. `Menu` decides *what* to show; `ResultView` decides *how it looks* | `cc92715` |
+| "If input ended, stop the menu and return" was copied **8 times** | `askInt()`, `askKey()` and `askYesNo()` wrap the `InputHelper` functions and stop the menu themselves | `0a8c9ab` |
+| The Easy/Medium/Hard menu was built **twice** | One `chooseDifficulty(difficulty, describeEnemy)`, used by both random mazes and Play mode | `0573960` |
+| `directionBetween()` existed in both `Game.cpp` and `SelfTest.cpp` | Now the static `Player::directionBetween()`, next to `parseDirection()` | `57aad12` |
+
+**Result:** `Menu.cpp` went from **477 to 364 lines**, and all three duplications are gone. Every step was checked against a saved baseline of 12 scripted sessions plus the self-test, and the output stayed byte-for-byte identical (see the test log).
+
+**Design note:** `ResultView` keeps references to `Menu`'s maze and algorithm list. C++ builds class members in the order they're declared, so `m_view` is declared *after* `m_maze` and `m_pathfinders`. Otherwise it would hold references to objects that don't exist yet.
