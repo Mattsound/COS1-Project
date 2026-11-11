@@ -30,6 +30,10 @@ public:
     // any other key.
     static bool parseDirection(char key, Direction& direction);
 
+    // The direction that steps from one cell to a neighboring cell, e.g. to
+    // turn a path from a Pathfinder into moves.
+    static Direction directionBetween(const Cell& from, const Cell& to);
+
 private:
     Cell* m_cell;         // not owned; points into the Maze's grid
     int m_moveCount = 0;

@@ -10,15 +10,6 @@
 
 namespace
 {
-    // The direction that moves from one cell to a neighboring cell.
-    Direction directionBetween(const Cell& from, const Cell& to)
-    {
-        if (to.getRow() < from.getRow()) return Direction::Up;
-        if (to.getRow() > from.getRow()) return Direction::Down;
-        if (to.getCol() < from.getCol()) return Direction::Left;
-        return Direction::Right;
-    }
-
     // Distance in moves from origin to every cell (-1 if unreachable), using
     // one breadth-first flood instead of one search per cell.
     std::vector<int> distancesFrom(Maze& maze, Cell* origin)
@@ -118,7 +109,7 @@ GameState Game::playShortestRoute(Maze& maze, Pathfinder& enemyPathfinder, Setti
 
     Game game(maze, enemyPathfinder, settings, plan);
     for (size_t i = 1; i < route.size() && game.getState() == GameState::Playing; ++i)
-        game.playTurn(directionBetween(*route[i - 1], *route[i]));
+        game.playTurn(Player::directionBetween(*route[i - 1], *route[i]));
 
     return game.getState();
 }

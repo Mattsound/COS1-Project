@@ -42,3 +42,11 @@ bool Player::parseDirection(char key, Direction& direction)
     default:  return false;
     }
 }
+
+Direction Player::directionBetween(const Cell& from, const Cell& to)
+{
+    if (to.getRow() < from.getRow()) return Direction::Up;
+    if (to.getRow() > from.getRow()) return Direction::Down;
+    if (to.getCol() < from.getCol()) return Direction::Left;
+    return Direction::Right;
+}

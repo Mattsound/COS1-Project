@@ -178,15 +178,6 @@ namespace
         return Player::parseDirection(key, direction) && direction == expected;
     }
 
-    // The direction that moves from one cell to a neighboring cell.
-    Direction directionBetween(const Cell& from, const Cell& to)
-    {
-        if (to.getRow() < from.getRow()) return Direction::Up;
-        if (to.getRow() > from.getRow()) return Direction::Down;
-        if (to.getCol() < from.getCol()) return Direction::Left;
-        return Direction::Right;
-    }
-
     void testPlayer()
     {
         Direction unused;
@@ -233,7 +224,7 @@ namespace
             Player walker(randomMaze.getStart());
             bool everyMoveWorked = true;
             for (size_t i = 1; i < result.path.size(); ++i)
-                everyMoveWorked = walker.move(randomMaze, directionBetween(*result.path[i - 1], *result.path[i])) && everyMoveWorked;
+                everyMoveWorked = walker.move(randomMaze, Player::directionBetween(*result.path[i - 1], *result.path[i])) && everyMoveWorked;
 
             if (everyMoveWorked && walker.getCell() == randomMaze.getGoal() &&
                 walker.getMoveCount() == result.getPathLength())
