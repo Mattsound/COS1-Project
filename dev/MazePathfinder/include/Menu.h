@@ -36,7 +36,9 @@ private:
     // Play mode: pick a difficulty, then play random mazes against the enemy
     // until the user goes back to the main menu.
     void playMaze();
-    bool choosePlayDifficulty(Difficulty& difficulty);
+    // Easy/Medium/Hard picker shared by random mazes and Play mode. With
+    // describeEnemy, each option also says how the enemy behaves.
+    bool chooseDifficulty(Difficulty& difficulty, bool describeEnemy);
     void playOneGame(Difficulty difficulty);
 
     enum class Mode

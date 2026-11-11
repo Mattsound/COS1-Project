@@ -132,7 +132,7 @@ void Menu::handleChoice(int choice)
 void Menu::playMaze()
 {
     Difficulty difficulty = Difficulty::Medium;
-    if (!choosePlayDifficulty(difficulty))
+    if (!chooseDifficulty(difficulty, true))
         return;
 
     while (m_running)
@@ -152,12 +152,12 @@ void Menu::playMaze()
 
         if (choice == 0)
             return;
-        if (choice == 2 && !choosePlayDifficulty(difficulty))
+        if (choice == 2 && !chooseDifficulty(difficulty, true))
             return;
     }
 }
 
-bool Menu::choosePlayDifficulty(Difficulty& difficulty)
+bool Menu::chooseDifficulty(Difficulty& difficulty, bool describeEnemy)
 {
     const Difficulty difficulties[] = { Difficulty::Easy, Difficulty::Medium, Difficulty::Hard };
     const int count = static_cast<int>(std::size(difficulties));
@@ -167,8 +167,10 @@ bool Menu::choosePlayDifficulty(Difficulty& difficulty)
     {
         MazeGenerator::Size size = MazeGenerator::getSize(difficulties[i]);
         std::cout << i + 1 << ". " << MazeGenerator::getName(difficulties[i])
-                  << " (" << size.width << " x " << size.height << ", enemy "
-                  << Game::describeEnemy(Game::getSettings(difficulties[i])) << ")\n";
+                  << " (" << size.width << " x " << size.height;
+        if (describeEnemy)
+            std::cout << ", enemy " << Game::describeEnemy(Game::getSettings(difficulties[i]));
+        std::cout << ")\n";
     }
     std::cout << "0. Back to main menu\n";
 
@@ -385,27 +387,11 @@ bool Menu::chooseMaze()
 
 bool Menu::chooseRandomMaze()
 {
-    const Difficulty difficulties[] = { Difficulty::Easy, Difficulty::Medium, Difficulty::Hard };
-    const int count = static_cast<int>(std::size(difficulties));
-
-    std::cout << "\nChoose a difficulty:\n";
-    for (int i = 0; i < count; ++i)
-    {
-        MazeGenerator::Size size = MazeGenerator::getSize(difficulties[i]);
-        std::cout << i + 1 << ". " << MazeGenerator::getName(difficulties[i])
-                  << " (" << size.width << " x " << size.height << ")\n";
-    }
-    std::cout << "0. Back to main menu\n";
-
-    int choice = 0;
-    if (!askInt("Choose a difficulty", 0, count, choice))
-        return false;
-
-    if (choice == 0)
+    Difficulty difficulty = Difficulty::Medium;
+    if (!chooseDifficulty(difficulty, false))
         return false;
 
     const unsigned int seed = nextSeed();
-    const Difficulty difficulty = difficulties[choice - 1];
     if (!loadLayout(m_generator.generate(difficulty, seed)))
         return false;
 
