@@ -17,22 +17,40 @@ namespace
         return text.substr(first, last - first + 1);
     }
 
-    // Converts the whole string to an int. Rejects "abc", "3x", "", and
-    // numbers too large to fit in an int.
-    bool tryParseInt(const std::string& text, int& value)
+    enum class ParseResult
     {
-        if (text.empty())
+        Ok,
+        NotANumber, // "abc", "3x", "2.5", ""
+        TooLarge    // only digits, but too big (or small) to fit in an int
+    };
+
+    bool isWholeNumberText(const std::string& text)
+    {
+        size_t start = (!text.empty() && (text[0] == '+' || text[0] == '-')) ? 1 : 0;
+        if (start == text.size())
             return false;
+        for (size_t i = start; i < text.size(); ++i)
+        {
+            if (!std::isdigit(static_cast<unsigned char>(text[i])))
+                return false;
+        }
+        return true;
+    }
+
+    // Converts the whole string to an int.
+    ParseResult tryParseInt(const std::string& text, int& value)
+    {
+        if (!isWholeNumberText(text))
+            return ParseResult::NotANumber;
 
         try
         {
-            size_t charsUsed = 0;
-            value = std::stoi(text, &charsUsed);
-            return charsUsed == text.size();
+            value = std::stoi(text);
+            return ParseResult::Ok;
         }
-        catch (const std::exception&)
+        catch (const std::out_of_range&)
         {
-            return false;
+            return ParseResult::TooLarge;
         }
     }
 }
@@ -56,9 +74,15 @@ bool InputHelper::readInt(const std::string& prompt, int min, int max, int& resu
             continue;
         }
 
-        if (!tryParseInt(text, value))
+        const ParseResult parsed = tryParseInt(text, value);
+        if (parsed == ParseResult::NotANumber)
         {
             std::cout << "  \"" << text << "\" isn't a whole number. Please enter a number from " << range << ".\n";
+            continue;
+        }
+        if (parsed == ParseResult::TooLarge)
+        {
+            std::cout << "  " << text << " is too large. Please enter a number from " << range << ".\n";
             continue;
         }
 

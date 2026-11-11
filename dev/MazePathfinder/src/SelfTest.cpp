@@ -7,12 +7,14 @@
 #include "MazePresets.h"
 #include "Enemy.h"
 #include "Game.h"
+#include "InputHelper.h"
 #include "Player.h"
 
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <random>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -606,6 +608,70 @@ namespace
     }
 }
 
+namespace
+{
+    // Runs an input function with std::cin reading from the given text and
+    // std::cout captured, so the self-test can type at a prompt.
+    template <typename Function>
+    std::string withInput(const std::string& typed, Function function)
+    {
+        std::istringstream fakeKeyboard(typed);
+        std::ostringstream fakeScreen;
+        std::streambuf* realIn = std::cin.rdbuf(fakeKeyboard.rdbuf());
+        std::streambuf* realOut = std::cout.rdbuf(fakeScreen.rdbuf());
+        function();
+        std::cin.rdbuf(realIn);
+        std::cout.rdbuf(realOut);
+        std::cin.clear(); // reaching the end of the fake input sets eof on std::cin
+        return fakeScreen.str();
+    }
+
+    bool contains(const std::string& text, const std::string& part)
+    {
+        return text.find(part) != std::string::npos;
+    }
+
+    void testInputEdgeCases()
+    {
+        int number = 0;
+        bool ok = false;
+        std::string screen;
+
+        screen = withInput("99999999999\n99999999999x\n2\n", [&] { ok = InputHelper::readInt("Pick", 1, 4, number); });
+        check(ok && number == 2 && contains(screen, "99999999999 is too large") &&
+              contains(screen, "\"99999999999x\" isn't a whole number"),
+              "A number too big for an int is \"too large\"; the same digits with a letter are \"not a whole number\"");
+
+        screen = withInput("-1\n3\n", [&] { ok = InputHelper::readInt("Pick", 1, 4, number); });
+        check(ok && number == 3 && contains(screen, "-1 isn't an option"), "A negative number is rejected as out of range");
+
+        screen = withInput("2.5\n0x1\n3x\n4\n", [&] { ok = InputHelper::readInt("Pick", 1, 4, number); });
+        check(ok && number == 4 && contains(screen, "\"2.5\" isn't a whole number") &&
+              contains(screen, "\"0x1\" isn't a whole number") && contains(screen, "\"3x\" isn't a whole number"),
+              "Decimals, hex and trailing letters (2.5, 0x1, 3x) are all rejected");
+
+        screen = withInput("\n \t \n\t3  \n", [&] { ok = InputHelper::readInt("Pick", 1, 4, number); });
+        check(ok && number == 3 && contains(screen, "Type a number from 1-4"),
+              "Blank and whitespace-only lines are rejected; spaces and tabs around a number are ignored");
+
+        screen = withInput("+2\n", [&] { ok = InputHelper::readInt("Pick", 1, 4, number); });
+        check(ok && number == 2, "A leading plus sign (+2) is accepted as 2");
+
+        screen = withInput("", [&] { ok = InputHelper::readInt("Pick", 1, 4, number); });
+        check(!ok, "Input ending at a number prompt returns false instead of looping");
+
+        char key = 0;
+        screen = withInput("w d\nWW\nD\n", [&] { ok = InputHelper::readKey("Move", "wasdq", "Use W/A/S/D.", key); });
+        check(ok && key == 'd' && contains(screen, "\"w d\" isn't a valid key") && contains(screen, "\"WW\" isn't a valid key"),
+              "Keys: two keys at once are rejected, and a capital D is accepted as d");
+
+        bool answer = true;
+        screen = withInput("yep\n  N  \n", [&] { ok = InputHelper::readYesNo("Show?", answer); });
+        check(ok && !answer && contains(screen, "\"yep\" isn't a yes or no answer"),
+              "Yes/no: \"yep\" is rejected and \"  N  \" counts as no");
+    }
+}
+
 bool SelfTest::runAll()
 {
     std::cout << "MAZE PATHFINDER SELF-TEST\n\n"
@@ -640,6 +706,9 @@ bool SelfTest::runAll()
 
     std::cout << "\nMaze edge cases:\n";
     testMazeEdgeCases();
+
+    std::cout << "\nInput edge cases:\n";
+    testInputEdgeCases();
 
     std::cout << "\n" << g_passed << " passed, " << g_failed << " failed\n";
     return g_failed == 0;
