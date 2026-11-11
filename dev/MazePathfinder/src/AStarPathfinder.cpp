@@ -31,12 +31,10 @@ namespace
     };
 }
 
-PathResult AStarPathfinder::findPath(Maze& maze)
+PathResult AStarPathfinder::findPathBetween(Maze& maze, Cell* start, Cell* goal)
 {
     PathResult result;
 
-    Cell* start = maze.getStart();
-    Cell* goal = maze.getGoal();
     if (start == nullptr || goal == nullptr)
         return result;
 

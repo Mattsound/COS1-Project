@@ -10,7 +10,7 @@ class AStarPathfinder : public Pathfinder
 public:
     std::string getName() const override { return "A* Search"; }
     std::string getShortName() const override { return "A*"; }
-    PathResult findPath(Maze& maze) override;
+    PathResult findPathBetween(Maze& maze, Cell* start, Cell* goal) override;
 
 private:
     // Manhattan distance: rows apart plus columns apart. It never overestimates

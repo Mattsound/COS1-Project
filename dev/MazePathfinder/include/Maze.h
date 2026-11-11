@@ -55,6 +55,16 @@ public:
     std::vector<std::string> renderLines(const std::vector<Cell*>& path = {},
                                          const std::vector<Cell*>& explored = {}) const;
 
+    // A character drawn on top of one cell, like 'P' for the player.
+    struct Marker
+    {
+        const Cell* cell;
+        char symbol;
+    };
+
+    // Draws the maze with markers on top. Later markers win if two share a cell.
+    void renderWithMarkers(const std::vector<Marker>& markers) const;
+
 private:
     void clear();
 

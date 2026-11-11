@@ -1,8 +1,14 @@
 #include "Pathfinder.h"
 
 #include "Cell.h"
+#include "Maze.h"
 
 #include <algorithm>
+
+PathResult Pathfinder::findPath(Maze& maze)
+{
+    return findPathBetween(maze, maze.getStart(), maze.getGoal());
+}
 
 std::vector<Cell*> Pathfinder::buildPath(Cell* goal)
 {

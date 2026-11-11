@@ -2,11 +2,11 @@
 
 #include "AStarPathfinder.h"
 #include "BfsPathfinder.h"
+#include "Game.h"
 #include "InputHelper.h"
 #include "MazePresets.h"
+#include "Player.h"
 
-#include <algorithm>
-#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <random>
@@ -29,13 +29,51 @@ namespace
         NewMaze = 3
     };
 
-    const int ColumnGap = 6; // spaces between mazes drawn side by side
+    // "1 move", "2 turns"
+    std::string countText(int count, const std::string& word)
+    {
+        return std::to_string(count) + " " + word + (count == 1 ? "" : "s");
+    }
 }
 
 Menu::Menu()
+    : m_view(m_maze, m_pathfinders)
 {
     m_pathfinders.push_back(std::make_unique<BfsPathfinder>());
     m_pathfinders.push_back(std::make_unique<AStarPathfinder>());
+}
+
+// Each ask...() works like the InputHelper function it wraps, but if input
+// ends (Ctrl+Z / end of file) it also stops the menu, so callers only have to
+// check the return value instead of repeating that cleanup everywhere.
+bool Menu::askInt(const std::string& prompt, int min, int max, int& result)
+{
+    if (InputHelper::readInt(prompt, min, max, result))
+        return true;
+    m_running = false;
+    return false;
+}
+
+bool Menu::askKey(const std::string& prompt, const std::string& validKeys, const std::string& help, char& result)
+{
+    if (InputHelper::readKey(prompt, validKeys, help, result))
+        return true;
+    m_running = false;
+    return false;
+}
+
+bool Menu::askYesNo(const std::string& prompt, bool& result)
+{
+    if (InputHelper::readYesNo(prompt, result))
+        return true;
+    m_running = false;
+    return false;
+}
+
+unsigned int Menu::nextSeed() const
+{
+    // Keep seeds short so they're easy to read and note down.
+    return m_hasFixedSeed ? m_fixedSeed : std::random_device{}() % 100000;
 }
 
 void Menu::run()
@@ -56,8 +94,8 @@ void Menu::showMainMenu() const
               << "==============================\n"
               << "1. Solve a maze\n"
               << "     Pick a built-in or random maze and an algorithm, then watch it find the shortest path.\n"
-              << "2. Play mode (coming soon)\n"
-              << "     Race an AI enemy to the goal.\n"
+              << "2. Play mode\n"
+              << "     Reach G before the enemy catches you. It always knows the shortest way to you.\n"
               << "3. Compare algorithms\n"
               << "     Run BFS and A* on the same maze and see which explores fewer cells.\n"
               << "4. Exit\n";
@@ -80,11 +118,7 @@ void Menu::handleChoice(int choice)
         runMazeSession(Mode::Solve);
         break;
     case PlayMode:
-        std::cout << "\nPlay mode isn't available yet. It's planned for a future update.\n"
-                  << "In the meantime, try Solve a maze (1) or Compare algorithms (3).\n";
-        // Keep the message on screen until the user is ready.
-        if (!InputHelper::waitForEnter())
-            m_running = false;
+        playMaze();
         break;
     case CompareAlgorithms:
         runMazeSession(Mode::Compare);
@@ -92,6 +126,147 @@ void Menu::handleChoice(int choice)
     case Exit:
         m_running = false;
         break;
+    }
+}
+
+void Menu::playMaze()
+{
+    Difficulty difficulty = Difficulty::Medium;
+    if (!chooseDifficulty(difficulty, true))
+        return;
+
+    while (m_running)
+    {
+        playOneGame(difficulty);
+        if (!m_running)
+            return;
+
+        std::cout << "\nWhat next?\n"
+                  << "1. Play again (new " << MazeGenerator::getName(difficulty) << " maze)\n"
+                  << "2. Change difficulty\n"
+                  << "0. Back to main menu\n";
+
+        int choice = 0;
+        if (!askInt("Choose an option", 0, 2, choice))
+            return;
+
+        if (choice == 0)
+            return;
+        if (choice == 2 && !chooseDifficulty(difficulty, true))
+            return;
+    }
+}
+
+bool Menu::chooseDifficulty(Difficulty& difficulty, bool describeEnemy)
+{
+    const Difficulty difficulties[] = { Difficulty::Easy, Difficulty::Medium, Difficulty::Hard };
+    const int count = static_cast<int>(std::size(difficulties));
+
+    std::cout << "\nChoose a difficulty:\n";
+    for (int i = 0; i < count; ++i)
+    {
+        MazeGenerator::Size size = MazeGenerator::getSize(difficulties[i]);
+        std::cout << i + 1 << ". " << MazeGenerator::getName(difficulties[i])
+                  << " (" << size.width << " x " << size.height;
+        if (describeEnemy)
+            std::cout << ", enemy " << Game::describeEnemy(Game::getSettings(difficulties[i]));
+        std::cout << ")\n";
+    }
+    std::cout << "0. Back to main menu\n";
+
+    int choice = 0;
+    if (!askInt("Choose a difficulty", 0, count, choice))
+        return false;
+    if (choice == 0)
+        return false;
+
+    difficulty = difficulties[choice - 1];
+    return true;
+}
+
+void Menu::playOneGame(Difficulty difficulty)
+{
+    const Game::Settings settings = Game::getSettings(difficulty);
+    Game::EnemyPlan plan;
+    const unsigned int seed = Game::generatePlayable(m_generator, difficulty,
+                                                     nextSeed(), m_maze, plan);
+    if (plan.start == nullptr)
+    {
+        std::cout << "\nCouldn't build a playable maze this time. Please try again.\n";
+        return;
+    }
+
+    AStarPathfinder enemyBrain;
+    Game game(m_maze, enemyBrain, settings, plan);
+    BfsPathfinder ruler; // measures how far away the enemy is
+    const int shortestRoute = ruler.findPath(m_maze).getPathLength();
+
+    std::cout << "\nMaze #" << seed << " (" << MazeGenerator::getName(difficulty) << ", "
+              << m_maze.getCols() << " x " << m_maze.getRows() << ")\n"
+              << "You are P. Reach G before the enemy (E) catches you!\n"
+              << "E is asleep for " << countText(game.getHeadStart(), "turn") << ", then it "
+              << Game::describeEnemy(settings) << ".\n"
+              << "It always knows the shortest way to you, so watch out for dead ends.\n";
+
+    const std::string help = "Use W (up), A (left), S (down), D (right), or Q to quit.";
+    bool redraw = true;
+    bool wasAwake = game.isEnemyAwake();
+
+    while (game.getState() == GameState::Playing)
+    {
+        if (redraw)
+        {
+            std::cout << '\n';
+            m_maze.renderWithMarkers({ { game.getEnemyCell(), 'E' }, { game.getPlayerCell(), 'P' } });
+
+            std::cout << "Turn " << game.getTurn() << " | ";
+            if (!game.isEnemyAwake())
+                std::cout << "E wakes up in " << countText(game.getHeadStart() - game.getTurn(), "turn") << '\n';
+            else
+                std::cout << "E is " << countText(ruler.findPathBetween(m_maze, game.getEnemyCell(), game.getPlayerCell()).getPathLength(), "move")
+                          << " away\n";
+        }
+
+        char key = 0;
+        if (!askKey("Your move (W/A/S/D, Q to quit)", "wasdq", help, key))
+            return;
+
+        if (key == 'q')
+        {
+            std::cout << "\nYou gave up on turn " << game.getTurn() << ".\n";
+            return;
+        }
+
+        Direction direction = Direction::Up;
+        Player::parseDirection(key, direction);
+        if (!game.playTurn(direction))
+        {
+            // Don't redraw the whole maze just to say no.
+            std::cout << "  That way is blocked by a wall. Try another direction.\n";
+            redraw = false;
+            continue;
+        }
+        redraw = true;
+
+        if (!wasAwake && game.isEnemyAwake() && game.getState() == GameState::Playing)
+            std::cout << "\n*** E woke up! ***\n";
+        wasAwake = game.isEnemyAwake();
+    }
+
+    std::cout << '\n';
+    if (game.getState() == GameState::Won)
+    {
+        m_maze.renderWithMarkers({ { game.getEnemyCell(), 'E' }, { game.getPlayerCell(), 'P' } });
+        std::cout << "\nYou escaped in " << countText(game.getTurn(), "turn") << "! "
+                  << "The shortest route was " << countText(shortestRoute, "move") << ".\n";
+        if (game.getTurn() == shortestRoute)
+            std::cout << "Perfect run: you matched the pathfinder!\n";
+    }
+    else
+    {
+        m_maze.renderWithMarkers({ { game.getPlayerCell(), 'X' } });
+        std::cout << "\nCaught on turn " << game.getTurn() << "! (X marks the spot.)\n"
+                  << "Tip: the enemy always takes the shortest way to you, so a wrong turn into a dead end costs you.\n";
     }
 }
 
@@ -143,11 +318,8 @@ int Menu::askWhatNext()
               << BackToMainMenu << ". Back to main menu\n";
 
     int choice = BackToMainMenu;
-    if (!InputHelper::readInt("Choose an option", BackToMainMenu, NewMaze, choice))
-    {
-        m_running = false; // input ended, so shut down cleanly
+    if (!askInt("Choose an option", BackToMainMenu, NewMaze, choice))
         return BackToMainMenu;
-    }
     return choice;
 }
 
@@ -161,14 +333,10 @@ bool Menu::solveCurrentMaze()
     m_maze.render();
 
     PathResult result = pathfinder->findPath(m_maze);
-    showResult(*pathfinder, result);
+    m_view.showSolve(*pathfinder, result);
 
     if (askToShowExplored())
-    {
-        std::cout << "\nEvery cell " << pathfinder->getShortName() << " explored:\n\n";
-        m_maze.render(result.path, result.explored);
-        printLegend(true);
-    }
+        m_view.showSolveExplored(*pathfinder, result);
 
     return true;
 }
@@ -179,112 +347,16 @@ void Menu::compareCurrentMaze()
     for (const auto& pathfinder : m_pathfinders)
         results.push_back(pathfinder->findPath(m_maze));
 
-    printSideBySide(results, false);
-    printStatsTable(results);
-    printComparisonSummary(results);
+    m_view.showComparison(results);
 
     if (askToShowExplored())
-    {
-        std::cout << "\nEvery cell each algorithm explored:\n";
-        printSideBySide(results, true);
-        printLegend(true);
-    }
-}
-
-void Menu::printSideBySide(const std::vector<PathResult>& results, bool showExplored) const
-{
-    // Each maze is drawn under its algorithm's name.
-    const int columnWidth = m_maze.getCols() + ColumnGap;
-
-    std::cout << "\n  ";
-    for (const auto& pathfinder : m_pathfinders)
-        std::cout << std::left << std::setw(columnWidth) << pathfinder->getShortName();
-    std::cout << "\n\n";
-
-    std::vector<std::vector<std::string>> drawings;
-    for (const PathResult& result : results)
-        drawings.push_back(m_maze.renderLines(result.path, showExplored ? result.explored : std::vector<Cell*>{}));
-
-    for (int row = 0; row < m_maze.getRows(); ++row)
-    {
-        std::cout << "  ";
-        for (const auto& drawing : drawings)
-            std::cout << std::left << std::setw(columnWidth) << drawing[row];
-        std::cout << '\n';
-    }
-}
-
-void Menu::printStatsTable(const std::vector<PathResult>& results) const
-{
-    std::cout << "\n  " << std::left << std::setw(30) << "Algorithm"
-              << std::right << std::setw(13) << "Path length"
-              << std::setw(17) << "Cells explored" << '\n'
-              << "  " << std::string(60, '-') << '\n';
-
-    for (size_t i = 0; i < results.size(); ++i)
-    {
-        std::cout << "  " << std::left << std::setw(30) << m_pathfinders[i]->getName() << std::right;
-        if (results[i].found)
-            std::cout << std::setw(13) << results[i].getPathLength();
-        else
-            std::cout << std::setw(13) << "no path";
-        std::cout << std::setw(17) << results[i].getCellsExplored() << '\n';
-    }
-}
-
-void Menu::printComparisonSummary(const std::vector<PathResult>& results) const
-{
-    std::cout << '\n';
-    if (!results[0].found)
-    {
-        std::cout << "No path exists, so every algorithm had to search every cell it could reach.\n";
-        return;
-    }
-
-    size_t fewest = 0;
-    for (size_t i = 1; i < results.size(); ++i)
-    {
-        if (results[i].getCellsExplored() < results[fewest].getCellsExplored())
-            fewest = i;
-    }
-
-    const int baseline = results[0].getCellsExplored();
-    const int saved = baseline - results[fewest].getCellsExplored();
-    if (fewest == 0 || saved == 0)
-    {
-        std::cout << "Every algorithm explored the same number of cells on this maze.\n";
-    }
-    else
-    {
-        std::cout << m_pathfinders[fewest]->getShortName() << " explored " << saved << " fewer cells than "
-                  << m_pathfinders[0]->getShortName() << " (" << (saved * 100 / baseline) << "% less).\n";
-    }
-
-    bool sameLength = std::all_of(results.begin(), results.end(), [&](const PathResult& r)
-    {
-        return r.getPathLength() == results[0].getPathLength();
-    });
-    if (sameLength)
-        std::cout << "All paths are the same length, so each algorithm found a shortest path.\n";
-}
-
-void Menu::printLegend(bool withExplored) const
-{
-    std::cout << "\nLegend: S = start, G = goal, # = wall, . = path";
-    if (withExplored)
-        std::cout << ", o = explored but not on the path";
-    std::cout << '\n';
+        m_view.showComparisonExplored(results);
 }
 
 bool Menu::askToShowExplored()
 {
     bool show = false;
-    if (!InputHelper::readYesNo("\nShow every cell the search explored?", show))
-    {
-        m_running = false; // input ended, so shut down cleanly
-        return false;
-    }
-    return show;
+    return askYesNo("\nShow every cell the search explored?", show) && show;
 }
 
 bool Menu::chooseMaze()
@@ -301,11 +373,8 @@ bool Menu::chooseMaze()
               << "0. Back to main menu\n";
 
     int choice = 0;
-    if (!InputHelper::readInt("Choose a maze", 0, randomOption, choice))
-    {
-        m_running = false; // input ended, so shut down cleanly
+    if (!askInt("Choose a maze", 0, randomOption, choice))
         return false;
-    }
 
     if (choice == 0)
         return false;
@@ -318,31 +387,11 @@ bool Menu::chooseMaze()
 
 bool Menu::chooseRandomMaze()
 {
-    const Difficulty difficulties[] = { Difficulty::Easy, Difficulty::Medium, Difficulty::Hard };
-    const int count = static_cast<int>(std::size(difficulties));
-
-    std::cout << "\nChoose a difficulty:\n";
-    for (int i = 0; i < count; ++i)
-    {
-        MazeGenerator::Size size = MazeGenerator::getSize(difficulties[i]);
-        std::cout << i + 1 << ". " << MazeGenerator::getName(difficulties[i])
-                  << " (" << size.width << " x " << size.height << ")\n";
-    }
-    std::cout << "0. Back to main menu\n";
-
-    int choice = 0;
-    if (!InputHelper::readInt("Choose a difficulty", 0, count, choice))
-    {
-        m_running = false;
-        return false;
-    }
-
-    if (choice == 0)
+    Difficulty difficulty = Difficulty::Medium;
+    if (!chooseDifficulty(difficulty, false))
         return false;
 
-    // Keep seeds short so they're easy to read and note down.
-    const unsigned int seed = std::random_device{}() % 100000;
-    const Difficulty difficulty = difficulties[choice - 1];
+    const unsigned int seed = nextSeed();
     if (!loadLayout(m_generator.generate(difficulty, seed)))
         return false;
 
@@ -372,11 +421,8 @@ Pathfinder* Menu::choosePathfinder()
     std::cout << "0. Back to main menu\n";
 
     int choice = 0;
-    if (!InputHelper::readInt("Choose an algorithm", 0, count, choice))
-    {
-        m_running = false; // input ended, so shut down cleanly
+    if (!askInt("Choose an algorithm", 0, count, choice))
         return nullptr;
-    }
 
     if (choice == 0)
         return nullptr;
@@ -384,19 +430,3 @@ Pathfinder* Menu::choosePathfinder()
     return m_pathfinders[choice - 1].get();
 }
 
-void Menu::showResult(const Pathfinder& pathfinder, const PathResult& result) const
-{
-    std::cout << "\nSolving with " << pathfinder.getName() << "...\n\n";
-
-    if (!result.found)
-    {
-        std::cout << "No path exists from S to G. Walls block every route.\n"
-                  << "Cells explored: " << result.getCellsExplored() << '\n';
-        return;
-    }
-
-    m_maze.render(result.path);
-    printLegend(false);
-    std::cout << "Path length:    " << result.getPathLength() << " moves\n"
-              << "Cells explored: " << result.getCellsExplored() << '\n';
-}

@@ -27,22 +27,25 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | **Compare algorithms:** BFS vs. A* on the same maze, drawn side by side with a stats table | ✅ Done |
 | **Random mazes:** Easy, Medium or Hard, generated with the recursive backtracker and shown with their seed | ✅ Done |
 | **Explored-cells overlay:** see every cell each algorithm searched (`o`) under the path (`.`), side by side in Compare mode | ✅ Done |
-| Automated self-test (`MazePathfinder.exe --selftest`): 27 checks covering 300 generated mazes, explored-cell lists, the no-path maze and layout errors | ✅ Done |
-| **Play mode:** move with W/A/S/D and reach the goal before the AI enemy catches you | 📝 Milestone 3 |
+| Automated self-test (`MazePathfinder.exe --selftest`): 76 checks covering random mazes, every algorithm, Play mode rules and fairness, maze edge cases and tricky input | ✅ Done |
+| **Play mode:** reach G with W/A/S/D before an enemy that chases you with A* catches you; Easy, Medium or Hard, always winnable | ✅ Done |
 | Save and load mazes and scores to files | 📝 Milestone 4 |
 
 ## Class Plan
 
 | Class | Responsibility | Status |
 |---|---|---|
-| `Menu` | Runs the main menu loop and sends each choice to the right feature | ✅ |
+| `Menu` | Runs the main menu loop, reads choices, and decides what happens next in each mode | ✅ |
+| `ResultView` | Prints Solve and Compare results: solved mazes, the explored overlay, side-by-side mazes and the stats table | ✅ |
 | `Cell` | One square of the maze: position, type (open, wall, start, goal) and a parent pointer used to rebuild paths | ✅ |
 | `Maze` | Owns the `vector<vector<Cell>>` grid. Builds it from a text layout, finds walkable neighbors and draws itself as ASCII | ✅ |
 | `Pathfinder` | Abstract base class, so every search algorithm shares one interface | ✅ |
 | `BfsPathfinder` | Breadth-First Search, which always finds the shortest path | ✅ |
 | `AStarPathfinder` | A* search with a Manhattan-distance heuristic, which usually explores far fewer cells than BFS | ✅ |
 | `MazeGenerator` | Builds random perfect mazes from a seed with the recursive backtracker (randomized DFS) | ✅ |
-| `Player` / `Enemy` | Play mode: the user moves the player, and the enemy chases using a `Pathfinder` | 📝 |
+| `Player` | Play mode: moves one cell at a time with W/A/S/D, refusing walls and the grid edge | ✅ |
+| `Enemy` | Play mode: re-plans with a `Pathfinder` every turn and moves toward the player (speed is adjustable) | ✅ |
+| `Game` | Play mode rules (turns, win/lose, difficulty) and a fair enemy start with a calculated head start; no console I/O, so it can be self-tested | ✅ |
 
 Helpers: `InputHelper` (validated console input), `MazePresets` (built-in maze layouts) and `SelfTest` (automated checks).
 
@@ -58,6 +61,10 @@ images/    screenshots
 
 1. Open `dev/MazePathfinder.sln` in Visual Studio 2022 or newer.
 2. Select the **x64** platform and press **Ctrl + F5**.
+
+**Command-line options** (run `dev\x64\Debug\MazePathfinder.exe` from a terminal):
+- `--selftest`: runs the automated checks and exits with code 0 if all pass
+- `--seed 12345`: every random maze uses this seed, so a maze can be shared or replayed
 
 ---
 
@@ -104,3 +111,30 @@ I leveled up on **testing my own code**. The self-test now runs 27 automated che
 ### 🔮 Next Steps
 - **Play mode (#10):** the player moves through the maze with W/A/S/D while an AI enemy chases them using the same pathfinding code.
 - **Save/Load (#11) in Week 4:** the maze seeds I'm already showing will make saving a maze simple.
+
+## Week 3
+
+### 🔎 Overview
+This week I finished **Play mode** and spent the rest of the week on **reliability**:
+- **Play mode (#10):** you move P with W/A/S/D and try to reach G before an enemy catches you. It's built from three new classes:
+  - `Player`: movement, refusing walls and the grid edge
+  - `Enemy`: re-plans with A* every turn
+  - `Game`: the rules, with no console input or output, so the self-test can play thousands of games
+- **Pathfinder refactor (#19):** the enemy needs to chase the *player*, not G, so the algorithms can now search between any two cells.
+- **Refactor (#21):** `Menu.cpp` went from 477 to 364 lines. A new `ResultView` class prints all the results, and three pieces of duplicated code are gone.
+- **Edge-case tests (#22):** the self-test went from 27 checks at the start of Week 2 to **76**.
+
+### 🧟 Challenges
+- **Most games were impossible to win.** Random mazes have exactly one route to G, so an enemy as fast as you could usually cut you off. A fair start existed in only 16–56% of mazes. My fix: the enemy sleeps in its lair, and the game calculates the *smallest* head start that still lets a perfect run escape, then adds spare turns by difficulty (Easy +6, Medium +3, Hard +0). The self-test proves it on 300 mazes: the shortest route always wins, and one turn less gets you caught.
+- **A self-test that never finished.** My first fairness check simulated a whole game for every possible enemy start. I replaced it with one distance calculation per cell, and it now takes seconds.
+- **Bugs I found by testing:**
+  - a test whose loop limit shrank every turn
+  - a few tiny mazes that were just one corridor with nowhere to put the enemy
+  - typing `99999999999` said "isn't a whole number" (it's now "too large")
+
+### 🏆 Accomplishments
+I leveled up on **refactoring safely**. Before changing anything, I saved the exact output of 12 scripted sessions plus the self-test, using fixed maze seeds so random mazes repeat exactly. After each refactoring step I compared everything **byte for byte**, and it stayed identical every time, which proves the structure changed without changing the behavior. I also learned that C++ builds class members in the order they're declared. That mattered, because `ResultView` holds references to other `Menu` members.
+
+### 🔮 Next Steps
+- **Week 4: Save and Load (#11).** Save mazes (seed and size, or the full layout for custom mazes), and handle missing or broken files without crashing.
+- Final documentation, the showcase, and the final Pull Request.
