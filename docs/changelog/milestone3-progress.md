@@ -11,7 +11,7 @@ Week 3 focus: finishing **Play mode** (#10) and making the program **reliable** 
 | #20 | Play mode game loop with win/lose and difficulty | ✅ Done |
 | #10 | Play mode (parent of #18-#20) | ✅ Done |
 | #21 | Refactor: move result and Compare display out of `Menu` | ✅ Done |
-| #22 | Edge-case tests: tiny mazes, start next to goal, mazes with loops | 📥 Backlog |
+| #22 | Edge-case tests: tiny mazes, start next to goal, mazes with loops | ✅ Done |
 
 ## Completed so far
 
@@ -71,3 +71,18 @@ EOF
 **Result:** `Menu.cpp` went from **477 to 364 lines**, and all three duplications are gone. Every step was checked against a saved baseline of 12 scripted sessions plus the self-test, and the output stayed byte-for-byte identical (see the test log).
 
 **Design note:** `ResultView` keeps references to `Menu`'s maze and algorithm list. C++ builds class members in the order they're declared, so `m_view` is declared *after* `m_maze` and `m_pathfinders`. Otherwise it would hold references to objects that don't exist yet.
+
+## Edge-case testing (#22)
+
+- **14 new self-test checks:**
+  - the smallest 5 × 5 maze
+  - start next to goal (in both Solve and Play mode)
+  - a goal sealed in by walls
+  - an open room with many equal routes
+  - 100 mazes with loops added
+  - 8 tricky inputs: huge numbers, negatives, decimals, hex, whitespace, a plus sign, end of input, multi-key input and yes/no variations
+- **New test tools:**
+  - `pathIsValid()` checks every step of a path is legal, not just its length.
+  - `withInput()` points `std::cin` and `std::cout` at strings, so the self-test can type at prompts and read the replies.
+- **Bug fixed:** a number too big for an `int` (e.g. `99999999999`) was called "not a whole number". `std::stoi` throws `out_of_range` for it, and the old code treated that like any bad text. It now says "is too large".
+- The maze and game logic passed every new maze edge case the first time.

@@ -154,3 +154,47 @@ Refactoring must not change what the user sees, so this was tested by **comparin
 | `directionBetween()` moved to `Player` | `57aad12` | 12 / 12 | 62 / 62, and the full output is identical |
 
 Every step produced exactly the same output as the original program, so the refactor changed the structure without changing the behavior.
+
+## Edge cases (#22)
+
+### Self-test additions (now 76 checks, all passing)
+
+```
+Maze edge cases:
+  PASS  Smallest maze (5 x 5), 100 seeds: always loads and both algorithms find a legal path
+  PASS  Start next to goal: both algorithms find the 1-move path
+  PASS  Start next to goal in Play mode: the enemy gets the only spare cell and one move wins
+  PASS  Goal enclosed by walls: no path is found and Play mode refuses to place an enemy
+  PASS  Open room (many equal routes): both find a 12-move path, and A* explores fewer cells
+  PASS  Mazes with loops, 100 seeds: BFS and A* paths are legal and the same length
+
+Input edge cases:
+  PASS  A number too big for an int is "too large"; the same digits with a letter are "not a whole number"
+  PASS  A negative number is rejected as out of range
+  PASS  Decimals, hex and trailing letters (2.5, 0x1, 3x) are all rejected
+  PASS  Blank and whitespace-only lines are rejected; spaces and tabs around a number are ignored
+  PASS  A leading plus sign (+2) is accepted as 2
+  PASS  Input ending at a number prompt returns false instead of looping
+  PASS  Keys: two keys at once are rejected, and a capital D is accepted as d
+  PASS  Yes/no: "yep" is rejected and "  N  " counts as no
+
+76 passed, 0 failed
+```
+
+**How the new checks work:**
+- **Legal paths:** a new `pathIsValid()` checks that a path starts at S, ends at G, and that every step moves to an *adjacent open* cell. Before, the tests only compared path *lengths*.
+- **Mazes with loops:** generated mazes have exactly one route. The test knocks down about 1 in 4 of the walls between rooms, so there are many routes. BFS and A* may now pick *different* routes, but both must be legal and equally short.
+- **Input tests:** the input functions read from `std::cin`, so the self-test temporarily points `std::cin` at a string (a "fake keyboard") and captures `std::cout` (a "fake screen"). That lets it type at a prompt and check exactly what the user would see.
+
+### Bug found and fixed
+
+| Input | Before | After |
+|---|---|---|
+| `99999999999` | `"99999999999" isn't a whole number.` (wrong: it *is* a whole number) | `99999999999 is too large. Please enter a number from 1-4.` |
+| `99999999999x` | `isn't a whole number` | `isn't a whole number` (still correct) |
+
+**Cause:** `std::stoi` throws `std::out_of_range` for numbers that don't fit in an `int`, and the old code treated *every* exception as "not a number". Now `tryParseInt()` first checks that the text is a whole number (an optional sign, then only digits) and reports "too large" separately.
+
+**Regression:** all 12 baseline menu runs are still byte-for-byte identical, since none of them type a huge number.
+
+The maze and game code passed every new maze edge case on the first run, so no bugs were found there.
