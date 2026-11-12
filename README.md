@@ -124,6 +124,17 @@ This week I finished **Play mode** and spent the rest of the week on **reliabili
 - **Refactor (#21):** `Menu.cpp` went from 477 to 364 lines. A new `ResultView` class prints all the results, and three pieces of duplicated code are gone.
 - **Edge-case tests (#22):** the self-test went from 27 checks at the start of Week 2 to **76**.
 
+### 🧹 Improvements
+- **`ResultView` class:** moved all result printing (solved mazes, the explored overlay, side-by-side comparison, the stats table) out of `Menu`. Now `Menu` decides *what* to show and `ResultView` decides *how it looks*.
+- **Less duplicated code:**
+  - `askInt()`, `askKey()` and `askYesNo()` replaced 8 copies of the "if input ended, stop the menu" block
+  - the two Easy/Medium/Hard menus became one `chooseDifficulty()`
+  - a helper that existed in two files is now `Player::directionBetween()`
+- **Pathfinding between any two cells:** algorithms implement `findPathBetween()`, and `findPath()` became a simple wrapper. The enemy needed it, and no existing code had to change.
+- **Faster fairness check:** replaced a full-game simulation per cell with one distance calculation.
+- **Clearer error message:** a number too big to store now says "too large".
+- **Result:** `Menu.cpp` went from 477 to 364 lines, and the program's output stayed byte-for-byte identical through every refactoring step.
+
 ### 🧟 Challenges
 - **Most games were impossible to win.** Random mazes have exactly one route to G, so an enemy as fast as you could usually cut you off. A fair start existed in only 16–56% of mazes. My fix: the enemy sleeps in its lair, and the game calculates the *smallest* head start that still lets a perfect run escape, then adds spare turns by difficulty (Easy +6, Medium +3, Hard +0). The self-test proves it on 300 mazes: the shortest route always wins, and one turn less gets you caught.
 - **A self-test that never finished.** My first fairness check simulated a whole game for every possible enemy start. I replaced it with one distance calculation per cell, and it now takes seconds.
