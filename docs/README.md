@@ -10,3 +10,4 @@ Project documentation.
 | `MMoreno-VersionControl.md` | Terminal, Git and version control reference |
 | `MMoreno-Milestone2-Planning.md` | Milestone 2 planning worksheet |
 | `MMoreno_Milestone2.md` | Milestone 2 Build Prototype: what changed in Week 2 and why |
+| `Milestone3.md` | Milestone 3: features, system design, refactoring, and what changed and why in Week 3 |
