@@ -8,7 +8,7 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 |---|---|---|
 | #11 | Save and Load (parent) | 🚧 In Progress |
 | #25 | Save the current maze to a text file | ✅ Done |
-| #26 | Load a maze from a text file | 📝 To Do |
+| #26 | Load a maze from a text file | ✅ Done |
 | #27 | Save and load Play mode best scores | 📝 To Do |
 | #28 | Test Save and Load, including bad files | 📥 Backlog |
 | #29 | Final polish: How to play screen and consistent prompts | 📥 Backlog |
@@ -22,6 +22,8 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 - **`Maze::getLayout()`:** turns the grid back into text rows.
 - **"4. Save this maze to a file"** in the What next? menu: asks for a name (0 cancels), asks before replacing an existing file, and shows the full path on success. Afterwards it returns to What next?, since the maze hasn't changed.
 - **`InputHelper::readText()`** and `Menu::askText()` for typed text, following the same end-of-input pattern as the other prompts.
+- **Loading (#26):** `MazeFile::load()` reads a file line by line, handles Notepad's byte order mark, Windows line endings and trailing blank lines, and rejects missing, empty, too-big or folder paths with a clear message. `MazeFile::listMazes()` lists the saved `.txt` files. In the maze picker, **"5. Load a maze from a file"** shows them by number. A file that isn't a valid maze gets the same specific reasons as the built-in checks (e.g. *"Row 3 is a different length than the first row"*), and the picker comes back instead of leaving the user stuck.
+- **The File I/O requirement (Save AND Load, handling missing files) is now met.**
 
 ## Design decisions
 
@@ -34,3 +36,4 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 |---|---|
 | Error text "can't contain :." was confusing | Show the character in quotes: `can't contain ":"` |
 | A test run could save a file into whatever folder it ran from | The test scripts now run in their own scratch folder, and the self-test uses a temp folder it deletes afterward |
+| A good maze drawn in Notepad could fail to load | Notepad can add an invisible byte order mark and Windows (`\r\n`) line endings; `load()` strips both |

@@ -36,3 +36,37 @@ These were run in a separate scratch folder, so test files never land in the rep
 **Fixed while testing:** the first wording, `File names can't contain :.`, was hard to read, so the character is now shown in quotes.
 
 **Regression:** all 12 scripted sessions from Milestone 3 still run cleanly. The only differences are the new "4. Save this maze to a file" option, plus one old script that typed `4` at What next? (which used to be invalid and now opens Save). The baseline was refreshed to include the new option.
+
+## Loading a maze (#26)
+
+### Self-test additions (now 88 checks, all passing)
+
+```
+Loading mazes:
+  PASS  Save then load, 100 random mazes: the loaded maze is identical and valid
+  PASS  A missing file reports "There's no file named ..."
+  PASS  An empty file, or one with only blank lines, is reported as empty
+  PASS  A Notepad-style file (byte order mark, CRLF line endings, trailing blank line) loads correctly
+  PASS  Files with too many rows or too-wide rows are rejected as too big
+  PASS  A folder named like a maze file is reported as a folder, not opened
+  PASS  Listing shows only .txt files, sorted by name; a missing folder lists nothing
+
+88 passed, 0 failed
+```
+
+**Why the Notepad test matters:** when a file is saved from Notepad it can start with three invisible bytes (the UTF-8 "byte order mark") and use Windows `\r\n` line endings. Without handling those, a perfectly good hand-drawn maze would fail with "Unknown character" on row 1, or with a stray `\r` at the end of every row. The test writes those exact bytes and checks the maze loads cleanly.
+
+### Menu tests (in a scratch folder with hand-made maze files)
+
+| # | File chosen | Expected | Actual | Pass |
+|---|---|---|---|---|
+| 1 | (no `mazes` folder yet) | Explains where to put mazes, then back to the picker | `There are no saved mazes in ...\mazes yet. Save one from the What next? menu, or put a maze .txt file in that folder.` | ✅ |
+| 2 | `b broken.txt` (row 3 shorter) | Specific reason, then back to the picker | `"b broken.txt" isn't a valid maze: Row 3 is a different length than the first row.` | ✅ |
+| 3 | `c empty.txt` | Reported as empty | `Couldn't load that file: "c empty.txt" is empty.` | ✅ |
+| 4 | `d letters.txt` (contains `X`) | Shows where | `Unknown character 'X' at row 2, column 3.` | ✅ |
+| 5 | `e noGoal.txt` | Explains what's missing | `A maze needs exactly one start (S) and one goal (G).` | ✅ |
+| 6 | `9` at the file list | Rejected | `9 isn't an option. Please enter a number from 0-5.` | ✅ |
+| 7 | `a good.txt` (hand-made, CRLF line endings) | Loads and solves | `Loaded "a good.txt" (7 x 5)`, BFS 6-move path | ✅ |
+| 8 | Save it as `copy`, then Compare, then load `copy.txt` | A full save/load round trip through the menus | `Saved to ...\copy.txt`, then `Loaded "copy.txt" (7 x 5)` with the side-by-side comparison | ✅ |
+
+**Regression:** all 12 scripted sessions still run. The only difference is the new "5. Load a maze from a file" line in the maze picker.
