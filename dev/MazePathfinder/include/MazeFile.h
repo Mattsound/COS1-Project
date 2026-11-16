@@ -24,4 +24,18 @@ namespace MazeFile
     // Writes the layout to path, one row per line, creating the folder if
     // needed. Returns false and fills in error if the file can't be written.
     bool save(const std::vector<std::string>& layout, const std::filesystem::path& path, std::string& error);
+
+    // The biggest maze a file may hold, so a huge file can't flood the console.
+    const int MaxRows = 101;
+    const int MaxCols = 201;
+
+    // Reads a maze file into layout, one row per line. Handles Windows line
+    // endings and the invisible marker Notepad can put at the start of a
+    // file. Blank lines at the end are ignored. Returns false and fills in
+    // error if the file is missing, can't be read, is empty, or is too big.
+    // (Whether the rows make a valid maze is checked by Maze::loadFromLayout.)
+    bool load(const std::filesystem::path& path, std::vector<std::string>& layout, std::string& error);
+
+    // Every .txt file in folder, sorted by name. Empty if the folder doesn't exist.
+    std::vector<std::filesystem::path> listMazes(const std::filesystem::path& folder);
 }

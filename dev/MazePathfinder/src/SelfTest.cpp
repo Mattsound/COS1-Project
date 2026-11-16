@@ -735,6 +735,77 @@ namespace
 
         std::filesystem::remove_all(testFolder(), ignored);
     }
+
+    // Writes exact bytes, so tests can create files the way Notepad might.
+    void writeRaw(const std::filesystem::path& path, const std::string& bytes)
+    {
+        std::filesystem::create_directories(path.parent_path());
+        std::ofstream file(path, std::ios::binary);
+        file << bytes;
+    }
+
+    void testLoading()
+    {
+        std::error_code ignored;
+        std::filesystem::remove_all(testFolder(), ignored);
+        const std::filesystem::path folder = testFolder();
+        MazeGenerator generator;
+        std::string error;
+        std::vector<std::string> layout;
+
+        // Round trip: save, load back, and get the same maze.
+        int roundTrips = 0;
+        for (unsigned int seed = 1; seed <= SeedsPerDifficulty; ++seed)
+        {
+            std::vector<std::string> original = generator.generate(Difficulty::Medium, seed);
+            Maze loaded;
+            if (MazeFile::save(original, folder / "trip.txt", error) && MazeFile::load(folder / "trip.txt", layout, error) &&
+                layout == original && loaded.loadFromLayout(layout, error))
+                ++roundTrips;
+        }
+        check(roundTrips == SeedsPerDifficulty, "Save then load, 100 random mazes: the loaded maze is identical and valid");
+
+        error.clear();
+        check(!MazeFile::load(folder / "nope.txt", layout, error) && contains(error, "no file named \"nope.txt\""),
+              "A missing file reports \"There's no file named ...\"");
+
+        writeRaw(folder / "empty.txt", "");
+        writeRaw(folder / "blank.txt", "\r\n\r\n\r\n");
+        bool emptyRejected = !MazeFile::load(folder / "empty.txt", layout, error) && contains(error, "is empty");
+        bool blankRejected = !MazeFile::load(folder / "blank.txt", layout, error) && contains(error, "is empty");
+        check(emptyRejected && blankRejected, "An empty file, or one with only blank lines, is reported as empty");
+
+        // What Notepad might save: a byte order mark, Windows line endings,
+        // and an extra blank line at the end.
+        writeRaw(folder / "notepad.txt", "\xEF\xBB\xBF#####\r\n#S G#\r\n#####\r\n\r\n");
+        Maze fromNotepad;
+        bool loaded = MazeFile::load(folder / "notepad.txt", layout, error);
+        check(loaded && layout == std::vector<std::string>{ "#####", "#S G#", "#####" } && fromNotepad.loadFromLayout(layout, error),
+              "A Notepad-style file (byte order mark, CRLF line endings, trailing blank line) loads correctly");
+
+        writeRaw(folder / "tall.txt", std::string(MazeFile::MaxRows + 1, '\n').insert(0, "#"));
+        std::string wideRow(MazeFile::MaxCols + 1, '#');
+        writeRaw(folder / "wide.txt", wideRow + "\n");
+        bool tallRejected = !MazeFile::load(folder / "tall.txt", layout, error) && contains(error, "too big");
+        bool wideRejected = !MazeFile::load(folder / "wide.txt", layout, error) && contains(error, "too big");
+        check(tallRejected && wideRejected, "Files with too many rows or too-wide rows are rejected as too big");
+
+        std::filesystem::create_directories(folder / "afolder.txt");
+        check(!MazeFile::load(folder / "afolder.txt", layout, error) && contains(error, "is a folder"),
+              "A folder named like a maze file is reported as a folder, not opened");
+
+        // Only .txt files are listed, sorted by name; a missing folder lists nothing.
+        std::filesystem::remove_all(folder, ignored);
+        writeRaw(folder / "b.txt", "x");
+        writeRaw(folder / "a.txt", "x");
+        writeRaw(folder / "notes.md", "x");
+        std::vector<std::filesystem::path> listed = MazeFile::listMazes(folder);
+        bool listedRight = listed.size() == 2 && listed[0].filename() == "a.txt" && listed[1].filename() == "b.txt";
+        check(listedRight && MazeFile::listMazes(folder / "missing").empty(),
+              "Listing shows only .txt files, sorted by name; a missing folder lists nothing");
+
+        std::filesystem::remove_all(folder, ignored);
+    }
 }
 
 bool SelfTest::runAll()
@@ -777,6 +848,9 @@ bool SelfTest::runAll()
 
     std::cout << "\nSaving mazes:\n";
     testSaving();
+
+    std::cout << "\nLoading mazes:\n";
+    testLoading();
 
     std::cout << "\n" << g_passed << " passed, " << g_failed << " failed\n";
     return g_failed == 0;

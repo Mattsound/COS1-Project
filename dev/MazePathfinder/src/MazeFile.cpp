@@ -1,5 +1,6 @@
 #include "MazeFile.h"
 
+#include <algorithm>
 #include <cctype>
 #include <fstream>
 #include <system_error>
@@ -102,4 +103,81 @@ bool MazeFile::save(const std::vector<std::string>& layout, const std::filesyste
     }
 
     return true;
+}
+
+bool MazeFile::load(const std::filesystem::path& path, std::vector<std::string>& layout, std::string& error)
+{
+    layout.clear();
+
+    std::error_code ignored;
+    if (!std::filesystem::exists(path, ignored))
+    {
+        error = "There's no file named \"" + path.filename().string() + "\" in " + path.parent_path().string() + ".";
+        return false;
+    }
+    if (std::filesystem::is_directory(path, ignored))
+    {
+        error = "\"" + path.filename().string() + "\" is a folder, not a maze file.";
+        return false;
+    }
+
+    std::ifstream file(path);
+    if (!file)
+    {
+        error = "Couldn't open \"" + path.filename().string() + "\". It may be open in another program.";
+        return false;
+    }
+
+    std::string line;
+    while (std::getline(file, line))
+    {
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back(); // Windows line ending
+
+        // Notepad can start a file with the invisible UTF-8 "byte order mark".
+        if (layout.empty() && line.compare(0, 3, "\xEF\xBB\xBF") == 0)
+            line.erase(0, 3);
+
+        layout.push_back(line);
+
+        if (static_cast<int>(layout.size()) > MaxRows)
+        {
+            error = "\"" + path.filename().string() + "\" has more than " + std::to_string(MaxRows) + " rows. That's too big to show.";
+            layout.clear();
+            return false;
+        }
+        if (static_cast<int>(line.size()) > MaxCols)
+        {
+            error = "Row " + std::to_string(layout.size()) + " of \"" + path.filename().string() + "\" is wider than " +
+                    std::to_string(MaxCols) + " characters. That's too big to show.";
+            layout.clear();
+            return false;
+        }
+    }
+
+    // A blank line at the end (easy to add in Notepad) isn't part of the maze.
+    while (!layout.empty() && layout.back().empty())
+        layout.pop_back();
+
+    if (layout.empty())
+    {
+        error = "\"" + path.filename().string() + "\" is empty.";
+        return false;
+    }
+
+    return true;
+}
+
+std::vector<std::filesystem::path> MazeFile::listMazes(const std::filesystem::path& folder)
+{
+    std::vector<std::filesystem::path> files;
+    std::error_code error;
+    for (const auto& entry : std::filesystem::directory_iterator(folder, error))
+    {
+        if (entry.is_regular_file(error) && entry.path().extension() == ".txt")
+            files.push_back(entry.path());
+    }
+
+    std::sort(files.begin(), files.end());
+    return files;
 }
