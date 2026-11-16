@@ -66,9 +66,14 @@ private:
     // replacing a file that already exists.
     void saveCurrentMaze();
 
-    // Lets the user pick a built-in or random maze and loads it into m_maze.
-    // Returns false if they went back or input ended.
+    // Lets the user pick a built-in, random or saved maze and loads it into
+    // m_maze. Returns false if they went back or input ended.
     bool chooseMaze();
+
+    // Lists the saved maze files and loads the one the user picks. Returns
+    // false (after explaining why) if there are none, the user went back, or
+    // the file couldn't be loaded.
+    bool chooseFileMaze();
 
     // Asks for a difficulty, then generates and loads a new random maze.
     bool chooseRandomMaze();

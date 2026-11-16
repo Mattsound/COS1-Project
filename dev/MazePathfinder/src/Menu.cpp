@@ -431,24 +431,80 @@ bool Menu::chooseMaze()
     const int count = static_cast<int>(presets.size());
 
     const int randomOption = count + 1;
+    const int fileOption = count + 2;
 
-    std::cout << "\nChoose a maze:\n";
+    while (true)
+    {
+        std::cout << "\nChoose a maze:\n";
+        for (int i = 0; i < count; ++i)
+            std::cout << i + 1 << ". " << presets[i].name << '\n';
+        std::cout << randomOption << ". Random maze (choose a difficulty)\n"
+                  << fileOption << ". Load a maze from a file\n"
+                  << "0. Back to main menu\n";
+
+        int choice = 0;
+        if (!askInt("Choose a maze", 0, fileOption, choice))
+            return false;
+
+        if (choice == 0)
+            return false;
+
+        if (choice == randomOption)
+            return chooseRandomMaze();
+
+        if (choice == fileOption)
+        {
+            if (chooseFileMaze())
+                return true;
+            if (!m_running)
+                return false;
+            continue; // the file couldn't be used, so show the picker again
+        }
+
+        return loadLayout(presets[choice - 1].layout);
+    }
+}
+
+bool Menu::chooseFileMaze()
+{
+    const std::filesystem::path folder = MazeFile::getFolder();
+    const std::vector<std::filesystem::path> files = MazeFile::listMazes(folder);
+    if (files.empty())
+    {
+        std::cout << "\nThere are no saved mazes in " << folder.string() << " yet.\n"
+                  << "Save one from the What next? menu, or put a maze .txt file in that folder.\n";
+        return false;
+    }
+
+    std::cout << "\nSaved mazes in " << folder.string() << ":\n";
+    const int count = static_cast<int>(files.size());
     for (int i = 0; i < count; ++i)
-        std::cout << i + 1 << ". " << presets[i].name << '\n';
-    std::cout << randomOption << ". Random maze (choose a difficulty)\n"
-              << "0. Back to main menu\n";
+        std::cout << i + 1 << ". " << files[i].filename().string() << '\n';
+    std::cout << "0. Back to the maze list\n";
 
     int choice = 0;
-    if (!askInt("Choose a maze", 0, randomOption, choice))
+    if (!askInt("Choose a file", 0, count, choice) || choice == 0)
         return false;
 
-    if (choice == 0)
+    const std::filesystem::path& path = files[choice - 1];
+    const std::string name = path.filename().string();
+
+    std::vector<std::string> layout;
+    std::string error;
+    if (!MazeFile::load(path, layout, error))
+    {
+        std::cout << "  Couldn't load that file: " << error << '\n';
         return false;
+    }
 
-    if (choice == randomOption)
-        return chooseRandomMaze();
+    if (!m_maze.loadFromLayout(layout, error))
+    {
+        std::cout << "  \"" << name << "\" isn't a valid maze: " << error << '\n';
+        return false;
+    }
 
-    return loadLayout(presets[choice - 1].layout);
+    std::cout << "\nLoaded \"" << name << "\" (" << m_maze.getCols() << " x " << m_maze.getRows() << ")\n";
+    return true;
 }
 
 bool Menu::chooseRandomMaze()
