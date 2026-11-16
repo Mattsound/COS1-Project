@@ -29,7 +29,8 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | **Explored-cells overlay:** see every cell each algorithm searched (`o`) under the path (`.`), side by side in Compare mode | ✅ Done |
 | Automated self-test (`MazePathfinder.exe --selftest`): 76 checks covering random mazes, every algorithm, Play mode rules and fairness, maze edge cases and tricky input | ✅ Done |
 | **Play mode:** reach G with W/A/S/D before an enemy that chases you with A* catches you; Easy, Medium or Hard, always winnable | ✅ Done |
-| Save and load mazes and scores to files | 📝 Milestone 4 |
+| **Save a maze** to a plain-text file you can open in Notepad (from the What next? menu) | ✅ Done |
+| Load a maze from a file, and save Play mode best scores | 🚧 Milestone 4 |
 
 ## Class Plan
 
