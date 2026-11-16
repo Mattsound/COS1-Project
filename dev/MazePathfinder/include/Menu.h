@@ -28,6 +28,7 @@ private:
     bool askInt(const std::string& prompt, int min, int max, int& result);
     bool askKey(const std::string& prompt, const std::string& validKeys, const std::string& help, char& result);
     bool askYesNo(const std::string& prompt, bool& result);
+    bool askText(const std::string& prompt, std::string& result);
 
     void showMainMenu() const;
     int readChoice() const;
@@ -60,6 +61,10 @@ private:
     // Shows the "What next?" options and returns the choice (0 = main menu,
     // which is also returned if input ended).
     int askWhatNext();
+
+    // Asks for a file name and saves m_maze to the mazes folder. Asks before
+    // replacing a file that already exists.
+    void saveCurrentMaze();
 
     // Lets the user pick a built-in or random maze and loads it into m_maze.
     // Returns false if they went back or input ended.

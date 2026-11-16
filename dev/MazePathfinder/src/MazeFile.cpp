@@ -52,7 +52,8 @@ bool MazeFile::isValidName(const std::string& name, std::string& reason)
     {
         if (notAllowed.find(c) != std::string::npos || static_cast<unsigned char>(c) < 32)
         {
-            reason = "File names can't contain " + std::string(1, c) +
+            reason = (static_cast<unsigned char>(c) < 32 ? std::string("File names can't contain control characters")
+                                                          : "File names can't contain \"" + std::string(1, c) + "\"") +
                      ". Please avoid these characters: < > : \" / \\ | ? *";
             return false;
         }

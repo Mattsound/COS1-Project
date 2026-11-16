@@ -4,9 +4,11 @@
 #include "BfsPathfinder.h"
 #include "Game.h"
 #include "InputHelper.h"
+#include "MazeFile.h"
 #include "MazePresets.h"
 #include "Player.h"
 
+#include <filesystem>
 #include <iostream>
 #include <iterator>
 #include <random>
@@ -26,7 +28,8 @@ namespace
         BackToMainMenu = 0,
         SolveThisMaze = 1,
         CompareThisMaze = 2,
-        NewMaze = 3
+        NewMaze = 3,
+        SaveThisMaze = 4
     };
 
     // "1 move", "2 turns"
@@ -65,6 +68,14 @@ bool Menu::askKey(const std::string& prompt, const std::string& validKeys, const
 bool Menu::askYesNo(const std::string& prompt, bool& result)
 {
     if (InputHelper::readYesNo(prompt, result))
+        return true;
+    m_running = false;
+    return false;
+}
+
+bool Menu::askText(const std::string& prompt, std::string& result)
+{
+    if (InputHelper::readText(prompt, result))
         return true;
     m_running = false;
     return false;
@@ -291,7 +302,15 @@ void Menu::runMazeSession(Mode mode)
             return;
 
         // The results stay on screen while the user decides what to do next.
-        switch (askWhatNext())
+        // Saving doesn't change the maze, so it asks again afterward.
+        int next = askWhatNext();
+        while (next == SaveThisMaze && m_running)
+        {
+            saveCurrentMaze();
+            next = askWhatNext();
+        }
+
+        switch (next)
         {
         case SolveThisMaze:
             mode = Mode::Solve;
@@ -315,12 +334,59 @@ int Menu::askWhatNext()
               << SolveThisMaze << ". Solve this maze with an algorithm\n"
               << CompareThisMaze << ". Compare algorithms on this maze\n"
               << NewMaze << ". Pick a new maze\n"
+              << SaveThisMaze << ". Save this maze to a file\n"
               << BackToMainMenu << ". Back to main menu\n";
 
     int choice = BackToMainMenu;
-    if (!askInt("Choose an option", BackToMainMenu, NewMaze, choice))
+    if (!askInt("Choose an option", BackToMainMenu, SaveThisMaze, choice))
         return BackToMainMenu;
     return choice;
+}
+
+void Menu::saveCurrentMaze()
+{
+    const std::filesystem::path folder = MazeFile::getFolder();
+    std::cout << "\nSave this maze as a text file in " << folder.string() << "\n"
+              << "You can open it in Notepad, and load it again later from the maze picker.\n";
+
+    while (true)
+    {
+        std::string name;
+        if (!askText("File name (or 0 to cancel)", name))
+            return;
+        if (name == "0")
+        {
+            std::cout << "  Not saved.\n";
+            return;
+        }
+
+        std::string reason;
+        if (!MazeFile::isValidName(name, reason))
+        {
+            std::cout << "  " << reason << '\n';
+            continue;
+        }
+
+        const std::string fileName = MazeFile::withExtension(name);
+        const std::filesystem::path path = folder / fileName;
+
+        std::error_code ignored;
+        if (std::filesystem::exists(path, ignored))
+        {
+            bool replace = false;
+            if (!askYesNo("  \"" + fileName + "\" already exists. Replace it?", replace))
+                return;
+            if (!replace)
+                continue; // ask for a different name
+        }
+
+        std::string error;
+        if (MazeFile::save(m_maze.getLayout(), path, error))
+            std::cout << "  Saved to " << path.string() << '\n';
+        else
+            std::cout << "  " << error << '\n';
+        return;
+    }
 }
 
 bool Menu::solveCurrentMaze()
