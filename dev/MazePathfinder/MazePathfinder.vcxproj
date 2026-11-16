@@ -85,6 +85,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Maze.cpp" />
     <ClCompile Include="src\MazePresets.cpp" />
+    <ClCompile Include="src\MazeFile.cpp" />
     <ClCompile Include="src\MazeGenerator.cpp" />
     <ClCompile Include="src\Menu.cpp" />
     <ClCompile Include="src\Pathfinder.cpp" />
@@ -101,6 +102,7 @@
     <ClInclude Include="include\InputHelper.h" />
     <ClInclude Include="include\Maze.h" />
     <ClInclude Include="include\MazePresets.h" />
+    <ClInclude Include="include\MazeFile.h" />
     <ClInclude Include="include\MazeGenerator.h" />
     <ClInclude Include="include\Menu.h" />
     <ClInclude Include="include\Pathfinder.h" />

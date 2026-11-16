@@ -3,6 +3,7 @@
 #include "AStarPathfinder.h"
 #include "BfsPathfinder.h"
 #include "Maze.h"
+#include "MazeFile.h"
 #include "MazeGenerator.h"
 #include "MazePresets.h"
 #include "Enemy.h"
@@ -12,6 +13,8 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <random>
 #include <sstream>
@@ -672,6 +675,68 @@ namespace
     }
 }
 
+namespace
+{
+    // A private folder for test files, removed afterward so the self-test
+    // never touches the user's real "mazes" folder.
+    std::filesystem::path testFolder()
+    {
+        return std::filesystem::temp_directory_path() / "MazePathfinderSelfTest";
+    }
+
+    std::vector<std::string> readLines(const std::filesystem::path& path)
+    {
+        std::vector<std::string> lines;
+        std::ifstream file(path);
+        std::string line;
+        while (std::getline(file, line))
+            lines.push_back(line);
+        return lines;
+    }
+
+    void testSaving()
+    {
+        std::string reason;
+        check(MazeFile::isValidName("my maze", reason) && MazeFile::isValidName("hard-41x21_v2", reason),
+              "Ordinary file names (spaces, dashes, underscores, digits) are accepted");
+
+        int rejected = 0;
+        const std::vector<std::string> badNames = { "", "a:b", "what?", "dir/name", "pipe|name", "quote\"d", "trailing.",
+                                                    "CON", "nul.txt", "COM3", std::string(101, 'x') };
+        for (const std::string& bad : badNames)
+        {
+            if (!MazeFile::isValidName(bad, reason) && !reason.empty())
+                ++rejected;
+        }
+        check(rejected == 11, "Blank, too-long, reserved (CON, NUL, COM3) and illegal-character names are all rejected with a reason");
+
+        check(MazeFile::withExtension("maze") == "maze.txt" && MazeFile::withExtension("maze.txt") == "maze.txt" &&
+              MazeFile::withExtension("maze.dat") == "maze.dat",
+              "\".txt\" is added only when the name has no extension");
+
+        std::error_code ignored;
+        std::filesystem::remove_all(testFolder(), ignored);
+
+        // Saving writes the exact layout, one row per line, and creates the folder.
+        MazeGenerator generator;
+        Maze maze;
+        std::string error;
+        maze.loadFromLayout(generator.generate(Difficulty::Hard, 7), error);
+        const std::filesystem::path path = testFolder() / "saved.txt";
+        bool saved = MazeFile::save(maze.getLayout(), path, error);
+        check(saved && readLines(path) == maze.getLayout(),
+              "Saving a 41 x 21 maze writes exactly its layout, one row per line (and creates the folder)");
+
+        // A path inside something that is a file, not a folder, can't be written.
+        const std::filesystem::path blocked = path / "inside-a-file.txt";
+        error.clear();
+        check(!MazeFile::save(maze.getLayout(), blocked, error) && !error.empty(),
+              "Saving somewhere that can't be written reports an error instead of crashing");
+
+        std::filesystem::remove_all(testFolder(), ignored);
+    }
+}
+
 bool SelfTest::runAll()
 {
     std::cout << "MAZE PATHFINDER SELF-TEST\n\n"
@@ -709,6 +774,9 @@ bool SelfTest::runAll()
 
     std::cout << "\nInput edge cases:\n";
     testInputEdgeCases();
+
+    std::cout << "\nSaving mazes:\n";
+    testSaving();
 
     std::cout << "\n" << g_passed << " passed, " << g_failed << " failed\n";
     return g_failed == 0;
