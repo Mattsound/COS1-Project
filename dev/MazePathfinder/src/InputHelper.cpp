@@ -156,6 +156,25 @@ bool InputHelper::readKey(const std::string& prompt, const std::string& validKey
     }
 }
 
+bool InputHelper::readText(const std::string& prompt, std::string& result)
+{
+    std::string line;
+    while (true)
+    {
+        std::cout << prompt << ": ";
+        if (!std::getline(std::cin, line))
+            return false;
+
+        const std::string text = trim(line);
+        if (!text.empty())
+        {
+            result = text;
+            return true;
+        }
+        std::cout << "  Type something, then press Enter.\n";
+    }
+}
+
 bool InputHelper::waitForEnter(const std::string& prompt)
 {
     std::cout << '\n' << prompt;

@@ -21,6 +21,11 @@ namespace InputHelper
     bool readKey(const std::string& prompt, const std::string& validKeys,
                  const std::string& help, char& result);
 
+    // Keeps asking until the user types something that isn't blank, then
+    // stores it with surrounding spaces removed. Returns false only if input
+    // has ended.
+    bool readText(const std::string& prompt, std::string& result);
+
     // Waits for the user to press Enter so results stay on screen until
     // they're done reading. Returns false if input has ended.
     bool waitForEnter(const std::string& prompt = "Press Enter to return to the main menu...");

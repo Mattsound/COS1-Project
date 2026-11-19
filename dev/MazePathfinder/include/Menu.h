@@ -4,6 +4,7 @@
 #include "MazeGenerator.h"
 #include "Pathfinder.h"
 #include "ResultView.h"
+#include "ScoreBoard.h"
 
 #include <memory>
 #include <vector>
@@ -28,10 +29,15 @@ private:
     bool askInt(const std::string& prompt, int min, int max, int& result);
     bool askKey(const std::string& prompt, const std::string& validKeys, const std::string& help, char& result);
     bool askYesNo(const std::string& prompt, bool& result);
+    bool askText(const std::string& prompt, std::string& result);
 
     void showMainMenu() const;
     int readChoice() const;
     void handleChoice(int choice);
+
+    // Explains each mode, the symbols, and where files are saved, then waits
+    // for Enter.
+    void showHowToPlay();
 
     // Play mode: pick a difficulty, then play random mazes against the enemy
     // until the user goes back to the main menu.
@@ -61,9 +67,18 @@ private:
     // which is also returned if input ended).
     int askWhatNext();
 
-    // Lets the user pick a built-in or random maze and loads it into m_maze.
-    // Returns false if they went back or input ended.
+    // Asks for a file name and saves m_maze to the mazes folder. Asks before
+    // replacing a file that already exists.
+    void saveCurrentMaze();
+
+    // Lets the user pick a built-in, random or saved maze and loads it into
+    // m_maze. Returns false if they went back or input ended.
     bool chooseMaze();
+
+    // Lists the saved maze files and loads the one the user picks. Returns
+    // false (after explaining why) if there are none, the user went back, or
+    // the file couldn't be loaded.
+    bool chooseFileMaze();
 
     // Asks for a difficulty, then generates and loads a new random maze.
     bool chooseRandomMaze();
@@ -88,6 +103,9 @@ private:
     // Prints results. Declared after m_maze and m_pathfinders because it keeps
     // references to them, and members are built in declaration order.
     ResultView m_view;
+
+    // Play mode best scores, loaded at startup and saved after every win.
+    ScoreBoard m_scores;
 
     bool m_running = true;
     bool m_hasFixedSeed = false;

@@ -17,6 +17,11 @@ ResultView::ResultView(const Maze& maze, const std::vector<std::unique_ptr<Pathf
 {
 }
 
+std::string ResultView::countText(int count, const std::string& word)
+{
+    return std::to_string(count) + " " + word + (count == 1 ? "" : "s");
+}
+
 void ResultView::showSolveExplored(const Pathfinder& pathfinder, const PathResult& result) const
 {
     std::cout << "\nEvery cell " << pathfinder.getShortName() << " explored:\n\n";
@@ -102,7 +107,7 @@ void ResultView::printComparisonSummary(const std::vector<PathResult>& results) 
     }
     else
     {
-        std::cout << m_pathfinders[fewest]->getShortName() << " explored " << saved << " fewer cells than "
+        std::cout << m_pathfinders[fewest]->getShortName() << " explored " << countText(saved, "fewer cell") << " than "
                   << m_pathfinders[0]->getShortName() << " (" << (saved * 100 / baseline) << "% less).\n";
     }
 
@@ -135,6 +140,6 @@ void ResultView::showSolve(const Pathfinder& pathfinder, const PathResult& resul
 
     m_maze.render(result.path);
     printLegend(false);
-    std::cout << "Path length:    " << result.getPathLength() << " moves\n"
+    std::cout << "Path length:    " << countText(result.getPathLength(), "move") << '\n'
               << "Cells explored: " << result.getCellsExplored() << '\n';
 }

@@ -27,9 +27,12 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | **Compare algorithms:** BFS vs. A* on the same maze, drawn side by side with a stats table | ✅ Done |
 | **Random mazes:** Easy, Medium or Hard, generated with the recursive backtracker and shown with their seed | ✅ Done |
 | **Explored-cells overlay:** see every cell each algorithm searched (`o`) under the path (`.`), side by side in Compare mode | ✅ Done |
-| Automated self-test (`MazePathfinder.exe --selftest`): 76 checks covering random mazes, every algorithm, Play mode rules and fairness, maze edge cases and tricky input | ✅ Done |
+| Automated self-test (`MazePathfinder.exe --selftest`): 98 checks covering random mazes, every algorithm, Play mode rules and fairness, maze edge cases, tricky input, and saving and loading files (including bad and binary files) | ✅ Done |
 | **Play mode:** reach G with W/A/S/D before an enemy that chases you with A* catches you; Easy, Medium or Hard, always winnable | ✅ Done |
-| Save and load mazes and scores to files | 📝 Milestone 4 |
+| **Save a maze** to a plain-text file you can open in Notepad (from the What next? menu) | ✅ Done |
+| **Load a maze** from a file (saved ones, or your own drawn in Notepad), with clear messages for missing or broken files | ✅ Done |
+| **Best scores:** fewest turns to win on each difficulty, saved between runs | ✅ Done |
+| **How to play** screen (main menu option 4): every mode, the symbols, and where files are saved | ✅ Done |
 
 ## Class Plan
 
@@ -43,6 +46,8 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | `BfsPathfinder` | Breadth-First Search, which always finds the shortest path | ✅ |
 | `AStarPathfinder` | A* search with a Manhattan-distance heuristic, which usually explores far fewer cells than BFS | ✅ |
 | `MazeGenerator` | Builds random perfect mazes from a seed with the recursive backtracker (randomized DFS) | ✅ |
+| `MazeFile` | Saves and loads mazes as plain-text files, checks file names, lists saved mazes | ✅ |
+| `ScoreBoard` | Play mode best scores, saved to and loaded from `scores.txt` | ✅ |
 | `Player` | Play mode: moves one cell at a time with W/A/S/D, refusing walls and the grid edge | ✅ |
 | `Enemy` | Play mode: re-plans with a `Pathfinder` every turn and moves toward the player (speed is adjustable) | ✅ |
 | `Game` | Play mode rules (turns, win/lose, difficulty) and a fair enemy start with a calculated head start; no console I/O, so it can be self-tested | ✅ |
@@ -61,6 +66,7 @@ images/    screenshots
 
 1. Open `dev/MazePathfinder.sln` in Visual Studio 2022 or newer.
 2. Select the **x64** platform and press **Ctrl + F5**.
+3. New here? Choose **4. How to play** on the main menu. Choose **0** to exit.
 
 **Command-line options** (run `dev\x64\Debug\MazePathfinder.exe` from a terminal):
 - `--selftest`: runs the automated checks and exits with code 0 if all pass
@@ -149,3 +155,32 @@ I leveled up on **refactoring safely**. Before changing anything, I saved the ex
 ### 🔮 Next Steps
 - **Week 4: Save and Load (#11).** Save mazes (seed and size, or the full layout for custom mazes), and handle missing or broken files without crashing.
 - Final documentation, the showcase, and the final Pull Request.
+
+## Week 4
+
+### 🔎 Overview
+This was the final week. I added **File I/O**, tested it against every bad file I could think of, and polished the program:
+- **Save a maze (#25):** "Save this maze to a file" in the What next? menu writes the maze as plain text, so it opens in Notepad.
+- **Load a maze (#26):** "Load a maze from a file" in the maze picker lists every saved maze, plus any maze drawn by hand in Notepad.
+- **Best scores (#27):** a new `ScoreBoard` class saves the fewest turns to win on each difficulty to `scores.txt` and loads it when the program starts.
+- **Save/Load tests (#28):** the self-test went from 76 to **98 checks**, including garbage, uneven, binary and overwritten files.
+- **Final polish (#29):** a **How to play** screen, **0** to exit like every other menu, and consistent wording everywhere.
+
+### 🧹 Improvements
+- **Readable error messages for bad files:** a broken maze file says exactly what's wrong and where (`Row 3 is a different length than the first row.`), and a binary file says `(character code 0)` instead of printing invisible bytes.
+- **Notepad-friendly loading:** Notepad's invisible byte order mark, Windows line endings and trailing blank lines are all handled.
+- **A damaged scores file is repaired, not wiped:** good lines are kept, and bad ones are reported once.
+- **Consistent menus:** 0 always means back or exit, "Back to the main menu" is worded the same everywhere, and plurals are correct ("1 move").
+- **Shared code:** `countText()` moved into `ResultView` so `Menu` and the results use one helper.
+
+### 🧟 Challenges
+- **Files are messier than keyboard input.** A maze I drew in Notepad failed to load with "Unknown character" on row 1, even though it looked perfect. Notepad had added three invisible bytes (a byte order mark) at the start and `\r` at the end of every line. `MazeFile::load()` now strips both, and a self-test writes those exact bytes to prove it.
+- **Testing without making a mess.** My first test runs could have saved files into whatever folder they ran from. The self-test now uses a temp folder it deletes afterward, and my scripted tests run in their own scratch folder.
+- **Making sure scores really persist.** One run can't prove that. I ran the program five separate times in a row: a first win, a tie, beating an older score, a corrupt file, and a read-only file.
+
+### 🏆 Accomplishments
+I leveled up on **File I/O and defensive programming**. I learned to treat every file as untrusted input: it might be missing, empty, a folder, too big, edited by hand or not text at all. Every case now gives a clear message instead of a crash. I also kept `ScoreBoard` free of console output, just like `Game` in Week 3, so the self-test could check each of those cases automatically.
+
+### 🔮 Next Steps
+- **Showcase presentation** and the final Pull Request into `main`.
+- Future ideas: score by *extra moves* over the shortest route instead of turns, split the save/load screens out of `Menu` (now 640 lines), and save a Play mode game in progress.

@@ -6,4 +6,5 @@ Test logs and notes showing the program compiles and behaves correctly. Screensh
 |---|---|
 | 1 | [milestone1-test-log.md](milestone1-test-log.md) |
 | 2 | [milestone2-test-log.md](milestone2-test-log.md) |
-| 3 | [milestone3-test-log.md](milestone3-test-log.md) (in progress) |
+| 3 | [milestone3-test-log.md](milestone3-test-log.md) |
+| 4 | [milestone4-test-log.md](milestone4-test-log.md) |

@@ -4,21 +4,25 @@
 #include "BfsPathfinder.h"
 #include "Game.h"
 #include "InputHelper.h"
+#include "MazeFile.h"
 #include "MazePresets.h"
 #include "Player.h"
 
+#include <filesystem>
 #include <iostream>
 #include <iterator>
 #include <random>
 
 namespace
 {
+    // 0 leaves, the same as "0. Back" in every other menu.
     enum MenuOption
     {
+        Exit = 0,
         SolveMaze = 1,
         PlayMode = 2,
         CompareAlgorithms = 3,
-        Exit = 4
+        HowToPlay = 4
     };
 
     enum NextStep
@@ -26,18 +30,19 @@ namespace
         BackToMainMenu = 0,
         SolveThisMaze = 1,
         CompareThisMaze = 2,
-        NewMaze = 3
+        NewMaze = 3,
+        SaveThisMaze = 4
     };
 
-    // "1 move", "2 turns"
     std::string countText(int count, const std::string& word)
     {
-        return std::to_string(count) + " " + word + (count == 1 ? "" : "s");
+        return ResultView::countText(count, word);
     }
 }
 
 Menu::Menu()
-    : m_view(m_maze, m_pathfinders)
+    : m_view(m_maze, m_pathfinders),
+      m_scores(std::filesystem::current_path() / "scores.txt")
 {
     m_pathfinders.push_back(std::make_unique<BfsPathfinder>());
     m_pathfinders.push_back(std::make_unique<AStarPathfinder>());
@@ -70,6 +75,14 @@ bool Menu::askYesNo(const std::string& prompt, bool& result)
     return false;
 }
 
+bool Menu::askText(const std::string& prompt, std::string& result)
+{
+    if (InputHelper::readText(prompt, result))
+        return true;
+    m_running = false;
+    return false;
+}
+
 unsigned int Menu::nextSeed() const
 {
     // Keep seeds short so they're easy to read and note down.
@@ -78,6 +91,11 @@ unsigned int Menu::nextSeed() const
 
 void Menu::run()
 {
+    // A missing scores file just means nothing has been won yet.
+    std::string problems;
+    if (m_scores.load(problems) == ScoreBoard::LoadResult::Repaired)
+        std::cout << "Note: some saved best scores couldn't be read and were reset: " << problems << ".\n";
+
     while (m_running)
     {
         showMainMenu();
@@ -93,21 +111,74 @@ void Menu::showMainMenu() const
               << "        MAZE PATHFINDER\n"
               << "==============================\n"
               << "1. Solve a maze\n"
-              << "     Pick a built-in or random maze and an algorithm, then watch it find the shortest path.\n"
+              << "     Pick a built-in, random or saved maze and an algorithm, then watch it find the shortest path.\n"
               << "2. Play mode\n"
               << "     Reach G before the enemy catches you. It always knows the shortest way to you.\n"
               << "3. Compare algorithms\n"
               << "     Run BFS and A* on the same maze and see which explores fewer cells.\n"
-              << "4. Exit\n";
+              << "4. How to play\n"
+              << "     What each mode does, what the symbols mean, and where files are saved.\n"
+              << "0. Exit\n";
 }
 
 int Menu::readChoice() const
 {
     int choice = 0;
-    if (!InputHelper::readInt("Choose an option", SolveMaze, Exit, choice))
+    if (!InputHelper::readInt("Choose an option", Exit, HowToPlay, choice))
         return Exit; // input ended, so leave instead of looping forever
 
     return choice;
+}
+
+void Menu::showHowToPlay()
+{
+    std::cout << "\n==============================\n"
+              << "         HOW TO PLAY\n"
+              << "==============================\n"
+              << "Type an option's number and press Enter. In every menu, 0 goes back.\n"
+              << "\n"
+              << "SOLVE A MAZE\n"
+              << "  Pick a maze (built-in, random, or saved in a file) and an algorithm:\n"
+              << "  - BFS searches outward from S in every direction, one step at a time.\n"
+              << "  - A* heads toward G first, so it usually explores fewer cells.\n"
+              << "  Both always find a shortest path. Afterward you can see every cell the\n"
+              << "  search explored, try the other algorithm, pick a new maze, or save it.\n"
+              << "\n"
+              << "PLAY MODE\n"
+              << "  You are P. Move with W (up), A (left), S (down), D (right), then Enter.\n"
+              << "  Reach G before the enemy E catches you. E sleeps for a few turns, then\n"
+              << "  chases you along the shortest route, so avoid dead ends.\n";
+
+    // Built from the real settings, so this screen can't drift out of date.
+    for (Difficulty difficulty : { Difficulty::Easy, Difficulty::Medium, Difficulty::Hard })
+    {
+        const Game::Settings settings = Game::getSettings(difficulty);
+        std::cout << "  - " << MazeGenerator::getName(difficulty) << ": E " << Game::describeEnemy(settings);
+        if (settings.extraHeadStart > 0)
+            std::cout << ", " << countText(settings.extraHeadStart, "spare turn");
+        std::cout << ".\n";
+    }
+
+    std::cout << "  A perfect run always escapes. Your fewest turns on each difficulty is saved.\n"
+              << "\n"
+              << "COMPARE ALGORITHMS\n"
+              << "  Runs BFS and A* on the same maze and shows their results side by side.\n"
+              << "\n"
+              << "SYMBOLS\n"
+              << "  S  start                # wall\n"
+              << "  G  goal                 (space)  open cell\n"
+              << "  .  the path found       o  explored, but not on the path\n"
+              << "  P  you (Play mode)      E  the enemy\n"
+              << "  X  where you were caught\n"
+              << "\n"
+              << "FILES\n"
+              << "  Saved mazes: " << MazeFile::getFolder().string() << '\n'
+              << "  You can also draw your own maze in Notepad: use # and spaces, exactly one S\n"
+              << "  and one G, and make every row the same length. Save it as a .txt file there.\n"
+              << "  Best scores: " << m_scores.getPath().string() << '\n';
+
+    if (!InputHelper::waitForEnter())
+        m_running = false;
 }
 
 void Menu::handleChoice(int choice)
@@ -122,6 +193,9 @@ void Menu::handleChoice(int choice)
         break;
     case CompareAlgorithms:
         runMazeSession(Mode::Compare);
+        break;
+    case HowToPlay:
+        showHowToPlay();
         break;
     case Exit:
         m_running = false;
@@ -144,7 +218,7 @@ void Menu::playMaze()
         std::cout << "\nWhat next?\n"
                   << "1. Play again (new " << MazeGenerator::getName(difficulty) << " maze)\n"
                   << "2. Change difficulty\n"
-                  << "0. Back to main menu\n";
+                  << "0. Back to the main menu\n";
 
         int choice = 0;
         if (!askInt("Choose an option", 0, 2, choice))
@@ -172,7 +246,7 @@ bool Menu::chooseDifficulty(Difficulty& difficulty, bool describeEnemy)
             std::cout << ", enemy " << Game::describeEnemy(Game::getSettings(difficulties[i]));
         std::cout << ")\n";
     }
-    std::cout << "0. Back to main menu\n";
+    std::cout << "0. Back to the main menu\n";
 
     int choice = 0;
     if (!askInt("Choose a difficulty", 0, count, choice))
@@ -207,6 +281,13 @@ void Menu::playOneGame(Difficulty difficulty)
               << "E is asleep for " << countText(game.getHeadStart(), "turn") << ", then it "
               << Game::describeEnemy(settings) << ".\n"
               << "It always knows the shortest way to you, so watch out for dead ends.\n";
+
+    const std::string difficultyName = MazeGenerator::getName(difficulty);
+    const int best = m_scores.getBest(difficulty);
+    if (best == 0)
+        std::cout << "No best score on " << difficultyName << " yet. Win to set one!\n";
+    else
+        std::cout << "Your best on " << difficultyName << ": " << countText(best, "turn") << ".\n";
 
     const std::string help = "Use W (up), A (left), S (down), D (right), or Q to quit.";
     bool redraw = true;
@@ -261,6 +342,22 @@ void Menu::playOneGame(Difficulty difficulty)
                   << "The shortest route was " << countText(shortestRoute, "move") << ".\n";
         if (game.getTurn() == shortestRoute)
             std::cout << "Perfect run: you matched the pathfinder!\n";
+
+        if (m_scores.recordWin(difficulty, game.getTurn()))
+        {
+            if (best == 0)
+                std::cout << "That's your first win on " << difficultyName << ", so it's your best so far!\n";
+            else
+                std::cout << "New best on " << difficultyName << "! (Your old best was " << countText(best, "turn") << ".)\n";
+
+            std::string error;
+            if (!m_scores.save(error))
+                std::cout << "  Your score couldn't be saved: " << error << '\n';
+        }
+        else
+        {
+            std::cout << "Your best on " << difficultyName << " is still " << countText(best, "turn") << ".\n";
+        }
     }
     else
     {
@@ -291,7 +388,15 @@ void Menu::runMazeSession(Mode mode)
             return;
 
         // The results stay on screen while the user decides what to do next.
-        switch (askWhatNext())
+        // Saving doesn't change the maze, so it asks again afterward.
+        int next = askWhatNext();
+        while (next == SaveThisMaze && m_running)
+        {
+            saveCurrentMaze();
+            next = askWhatNext();
+        }
+
+        switch (next)
         {
         case SolveThisMaze:
             mode = Mode::Solve;
@@ -315,12 +420,59 @@ int Menu::askWhatNext()
               << SolveThisMaze << ". Solve this maze with an algorithm\n"
               << CompareThisMaze << ". Compare algorithms on this maze\n"
               << NewMaze << ". Pick a new maze\n"
-              << BackToMainMenu << ". Back to main menu\n";
+              << SaveThisMaze << ". Save this maze to a file\n"
+              << BackToMainMenu << ". Back to the main menu\n";
 
     int choice = BackToMainMenu;
-    if (!askInt("Choose an option", BackToMainMenu, NewMaze, choice))
+    if (!askInt("Choose an option", BackToMainMenu, SaveThisMaze, choice))
         return BackToMainMenu;
     return choice;
+}
+
+void Menu::saveCurrentMaze()
+{
+    const std::filesystem::path folder = MazeFile::getFolder();
+    std::cout << "\nSave this maze as a text file in " << folder.string() << "\n"
+              << "You can open it in Notepad, and load it again later from the maze picker.\n";
+
+    while (true)
+    {
+        std::string name;
+        if (!askText("File name (or 0 to cancel)", name))
+            return;
+        if (name == "0")
+        {
+            std::cout << "  Not saved.\n";
+            return;
+        }
+
+        std::string reason;
+        if (!MazeFile::isValidName(name, reason))
+        {
+            std::cout << "  " << reason << '\n';
+            continue;
+        }
+
+        const std::string fileName = MazeFile::withExtension(name);
+        const std::filesystem::path path = folder / fileName;
+
+        std::error_code ignored;
+        if (std::filesystem::exists(path, ignored))
+        {
+            bool replace = false;
+            if (!askYesNo("  \"" + fileName + "\" already exists. Replace it?", replace))
+                return;
+            if (!replace)
+                continue; // ask for a different name
+        }
+
+        std::string error;
+        if (MazeFile::save(m_maze.getLayout(), path, error))
+            std::cout << "  Saved to " << path.string() << '\n';
+        else
+            std::cout << "  " << error << '\n';
+        return;
+    }
 }
 
 bool Menu::solveCurrentMaze()
@@ -365,24 +517,80 @@ bool Menu::chooseMaze()
     const int count = static_cast<int>(presets.size());
 
     const int randomOption = count + 1;
+    const int fileOption = count + 2;
 
-    std::cout << "\nChoose a maze:\n";
+    while (true)
+    {
+        std::cout << "\nChoose a maze:\n";
+        for (int i = 0; i < count; ++i)
+            std::cout << i + 1 << ". " << presets[i].name << '\n';
+        std::cout << randomOption << ". Random maze (choose a difficulty)\n"
+                  << fileOption << ". Load a maze from a file\n"
+                  << "0. Back to the main menu\n";
+
+        int choice = 0;
+        if (!askInt("Choose a maze", 0, fileOption, choice))
+            return false;
+
+        if (choice == 0)
+            return false;
+
+        if (choice == randomOption)
+            return chooseRandomMaze();
+
+        if (choice == fileOption)
+        {
+            if (chooseFileMaze())
+                return true;
+            if (!m_running)
+                return false;
+            continue; // the file couldn't be used, so show the picker again
+        }
+
+        return loadLayout(presets[choice - 1].layout);
+    }
+}
+
+bool Menu::chooseFileMaze()
+{
+    const std::filesystem::path folder = MazeFile::getFolder();
+    const std::vector<std::filesystem::path> files = MazeFile::listMazes(folder);
+    if (files.empty())
+    {
+        std::cout << "\nThere are no saved mazes in " << folder.string() << " yet.\n"
+                  << "Save one from the What next? menu, or put a maze .txt file in that folder.\n";
+        return false;
+    }
+
+    std::cout << "\nSaved mazes in " << folder.string() << ":\n";
+    const int count = static_cast<int>(files.size());
     for (int i = 0; i < count; ++i)
-        std::cout << i + 1 << ". " << presets[i].name << '\n';
-    std::cout << randomOption << ". Random maze (choose a difficulty)\n"
-              << "0. Back to main menu\n";
+        std::cout << i + 1 << ". " << files[i].filename().string() << '\n';
+    std::cout << "0. Back to the maze list\n";
 
     int choice = 0;
-    if (!askInt("Choose a maze", 0, randomOption, choice))
+    if (!askInt("Choose a file", 0, count, choice) || choice == 0)
         return false;
 
-    if (choice == 0)
+    const std::filesystem::path& path = files[choice - 1];
+    const std::string name = path.filename().string();
+
+    std::vector<std::string> layout;
+    std::string error;
+    if (!MazeFile::load(path, layout, error))
+    {
+        std::cout << "  Couldn't load that file: " << error << '\n';
         return false;
+    }
 
-    if (choice == randomOption)
-        return chooseRandomMaze();
+    if (!m_maze.loadFromLayout(layout, error))
+    {
+        std::cout << "  \"" << name << "\" isn't a valid maze: " << error << '\n';
+        return false;
+    }
 
-    return loadLayout(presets[choice - 1].layout);
+    std::cout << "\nLoaded \"" << name << "\" (" << m_maze.getCols() << " x " << m_maze.getRows() << ")\n";
+    return true;
 }
 
 bool Menu::chooseRandomMaze()
@@ -405,7 +613,7 @@ bool Menu::loadLayout(const std::vector<std::string>& layout)
     std::string error;
     if (!m_maze.loadFromLayout(layout, error))
     {
-        std::cout << "Could not load that maze: " << error << '\n';
+        std::cout << "  Couldn't load that maze: " << error << '\n';
         return false;
     }
     return true;
@@ -418,7 +626,7 @@ Pathfinder* Menu::choosePathfinder()
     std::cout << "\nChoose an algorithm:\n";
     for (int i = 0; i < count; ++i)
         std::cout << i + 1 << ". " << m_pathfinders[i]->getName() << '\n';
-    std::cout << "0. Back to main menu\n";
+    std::cout << "0. Back to the main menu\n";
 
     int choice = 0;
     if (!askInt("Choose an algorithm", 0, count, choice))

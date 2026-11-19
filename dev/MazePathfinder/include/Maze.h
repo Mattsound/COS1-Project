@@ -55,6 +55,10 @@ public:
     std::vector<std::string> renderLines(const std::vector<Cell*>& path = {},
                                          const std::vector<Cell*>& explored = {}) const;
 
+    // The maze as text rows ('#', 'S', 'G', ' '), the same format
+    // loadFromLayout() reads, so it can be saved and loaded back.
+    std::vector<std::string> getLayout() const { return renderLines(); }
+
     // A character drawn on top of one cell, like 'P' for the player.
     struct Marker
     {

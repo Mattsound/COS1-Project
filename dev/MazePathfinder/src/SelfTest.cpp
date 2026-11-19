@@ -3,15 +3,19 @@
 #include "AStarPathfinder.h"
 #include "BfsPathfinder.h"
 #include "Maze.h"
+#include "MazeFile.h"
 #include "MazeGenerator.h"
 #include "MazePresets.h"
 #include "Enemy.h"
 #include "Game.h"
 #include "InputHelper.h"
 #include "Player.h"
+#include "ScoreBoard.h"
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <random>
 #include <sstream>
@@ -672,6 +676,244 @@ namespace
     }
 }
 
+namespace
+{
+    // A private folder for test files, removed afterward so the self-test
+    // never touches the user's real "mazes" folder.
+    std::filesystem::path testFolder()
+    {
+        return std::filesystem::temp_directory_path() / "MazePathfinderSelfTest";
+    }
+
+    std::vector<std::string> readLines(const std::filesystem::path& path)
+    {
+        std::vector<std::string> lines;
+        std::ifstream file(path);
+        std::string line;
+        while (std::getline(file, line))
+            lines.push_back(line);
+        return lines;
+    }
+
+    void testSaving()
+    {
+        std::string reason;
+        check(MazeFile::isValidName("my maze", reason) && MazeFile::isValidName("hard-41x21_v2", reason),
+              "Ordinary file names (spaces, dashes, underscores, digits) are accepted");
+
+        int rejected = 0;
+        const std::vector<std::string> badNames = { "", "a:b", "what?", "dir/name", "pipe|name", "quote\"d", "trailing.",
+                                                    "CON", "nul.txt", "COM3", std::string(101, 'x') };
+        for (const std::string& bad : badNames)
+        {
+            if (!MazeFile::isValidName(bad, reason) && !reason.empty())
+                ++rejected;
+        }
+        check(rejected == 11, "Blank, too-long, reserved (CON, NUL, COM3) and illegal-character names are all rejected with a reason");
+
+        check(MazeFile::withExtension("maze") == "maze.txt" && MazeFile::withExtension("maze.txt") == "maze.txt" &&
+              MazeFile::withExtension("maze.dat") == "maze.dat",
+              "\".txt\" is added only when the name has no extension");
+
+        std::error_code ignored;
+        std::filesystem::remove_all(testFolder(), ignored);
+
+        // Saving writes the exact layout, one row per line, and creates the folder.
+        MazeGenerator generator;
+        Maze maze;
+        std::string error;
+        maze.loadFromLayout(generator.generate(Difficulty::Hard, 7), error);
+        const std::filesystem::path path = testFolder() / "saved.txt";
+        bool saved = MazeFile::save(maze.getLayout(), path, error);
+        check(saved && readLines(path) == maze.getLayout(),
+              "Saving a 41 x 21 maze writes exactly its layout, one row per line (and creates the folder)");
+
+        // A path inside something that is a file, not a folder, can't be written.
+        const std::filesystem::path blocked = path / "inside-a-file.txt";
+        error.clear();
+        check(!MazeFile::save(maze.getLayout(), blocked, error) && !error.empty(),
+              "Saving somewhere that can't be written reports an error instead of crashing");
+
+        std::filesystem::remove_all(testFolder(), ignored);
+    }
+
+    // Writes exact bytes, so tests can create files the way Notepad might.
+    void writeRaw(const std::filesystem::path& path, const std::string& bytes)
+    {
+        std::filesystem::create_directories(path.parent_path());
+        std::ofstream file(path, std::ios::binary);
+        file << bytes;
+    }
+
+    void testLoading()
+    {
+        std::error_code ignored;
+        std::filesystem::remove_all(testFolder(), ignored);
+        const std::filesystem::path folder = testFolder();
+        MazeGenerator generator;
+        std::string error;
+        std::vector<std::string> layout;
+
+        // Round trip: save, load back, and get the same maze.
+        int roundTrips = 0;
+        for (unsigned int seed = 1; seed <= SeedsPerDifficulty; ++seed)
+        {
+            std::vector<std::string> original = generator.generate(Difficulty::Medium, seed);
+            Maze loaded;
+            if (MazeFile::save(original, folder / "trip.txt", error) && MazeFile::load(folder / "trip.txt", layout, error) &&
+                layout == original && loaded.loadFromLayout(layout, error))
+                ++roundTrips;
+        }
+        check(roundTrips == SeedsPerDifficulty, "Save then load, 100 random mazes: the loaded maze is identical and valid");
+
+        error.clear();
+        check(!MazeFile::load(folder / "nope.txt", layout, error) && contains(error, "no file named \"nope.txt\""),
+              "A missing file reports \"There's no file named ...\"");
+
+        writeRaw(folder / "empty.txt", "");
+        writeRaw(folder / "blank.txt", "\r\n\r\n\r\n");
+        bool emptyRejected = !MazeFile::load(folder / "empty.txt", layout, error) && contains(error, "is empty");
+        bool blankRejected = !MazeFile::load(folder / "blank.txt", layout, error) && contains(error, "is empty");
+        check(emptyRejected && blankRejected, "An empty file, or one with only blank lines, is reported as empty");
+
+        // What Notepad might save: a byte order mark, Windows line endings,
+        // and an extra blank line at the end.
+        writeRaw(folder / "notepad.txt", "\xEF\xBB\xBF#####\r\n#S G#\r\n#####\r\n\r\n");
+        Maze fromNotepad;
+        bool loaded = MazeFile::load(folder / "notepad.txt", layout, error);
+        check(loaded && layout == std::vector<std::string>{ "#####", "#S G#", "#####" } && fromNotepad.loadFromLayout(layout, error),
+              "A Notepad-style file (byte order mark, CRLF line endings, trailing blank line) loads correctly");
+
+        writeRaw(folder / "tall.txt", std::string(MazeFile::MaxRows + 1, '\n').insert(0, "#"));
+        std::string wideRow(MazeFile::MaxCols + 1, '#');
+        writeRaw(folder / "wide.txt", wideRow + "\n");
+        bool tallRejected = !MazeFile::load(folder / "tall.txt", layout, error) && contains(error, "too big");
+        bool wideRejected = !MazeFile::load(folder / "wide.txt", layout, error) && contains(error, "too big");
+        check(tallRejected && wideRejected, "Files with too many rows or too-wide rows are rejected as too big");
+
+        std::filesystem::create_directories(folder / "afolder.txt");
+        check(!MazeFile::load(folder / "afolder.txt", layout, error) && contains(error, "is a folder"),
+              "A folder named like a maze file is reported as a folder, not opened");
+
+        int presetTrips = 0;
+        for (const MazePresets::Preset& preset : MazePresets::getAll())
+        {
+            if (MazeFile::save(preset.layout, folder / "preset.txt", error) &&
+                MazeFile::load(folder / "preset.txt", layout, error) && layout == preset.layout)
+                ++presetTrips;
+        }
+        check(presetTrips == static_cast<int>(MazePresets::getAll().size()),
+              "Every built-in maze (including the one with no path) saves and loads back identically");
+
+        // Replacing a big maze with a small one must not leave old rows behind.
+        MazeFile::save(generator.generate(Difficulty::Hard, 3), folder / "replace.txt", error);
+        const std::vector<std::string> small = { "#####", "#S G#", "#####" };
+        bool replaced = MazeFile::save(small, folder / "replace.txt", error);
+        check(replaced && readLines(folder / "replace.txt") == small,
+              "Saving over a bigger maze file replaces it completely (no leftover rows)");
+
+        // Files that are readable text but not mazes: the file loads, then the
+        // maze rejects it with a reason that says what's wrong and where.
+        auto mazeError = [&](const std::string& name, const std::string& bytes) {
+            writeRaw(folder / name, bytes);
+            std::string reason;
+            Maze maze;
+            if (!MazeFile::load(folder / name, layout, reason))
+                return "file error: " + reason;
+            if (maze.loadFromLayout(layout, reason))
+                return std::string("accepted");
+            return maze.getRows() == 0 ? reason : "rejected but not cleared: " + reason;
+        };
+        const std::string words = mazeError("words.txt", "Hello world\nthis is not a maze\n");
+        const std::string uneven = mazeError("uneven.txt", "#####\n#S G#\n###\n");
+        const std::string noGoal = mazeError("nogoal.txt", "#####\n#S  #\n#####\n");
+        const std::string twoStarts = mazeError("twostarts.txt", "#####\n#SSG#\n#####\n");
+        check(contains(words, "Unknown character 'H' at row 1, column 1") &&
+              contains(uneven, "Row 3 is a different length") && contains(noGoal, "exactly one start (S) and one goal (G)") &&
+              contains(twoStarts, "exactly one start (S) and one goal (G)"),
+              "Garbage text, uneven rows, a missing goal and two starts are each rejected with a clear reason");
+
+        // Binary junk (a NUL byte, 0xFF, a control code) and tabs would print as
+        // invisible or garbled characters, so the message describes them instead.
+        const std::string binary = mazeError("binary.txt", std::string("\0\xFF\x01#\n", 5));
+        const std::string tab = mazeError("tab.txt", "#####\n#S\tG#\n#####\n");
+        bool printable = std::all_of(binary.begin(), binary.end(), [](char c) {
+            return static_cast<unsigned char>(c) >= 32 && static_cast<unsigned char>(c) <= 126;
+        });
+        check(contains(binary, "(character code 0) at row 1, column 1") && printable &&
+              contains(tab, "(a tab) at row 2, column 3"),
+              "A binary file or a tab gives a readable message (\"character code 0\", \"a tab\"), not raw bytes");
+
+        // Only .txt files are listed, sorted by name; a missing folder lists nothing.
+        std::filesystem::remove_all(folder, ignored);
+        writeRaw(folder / "b.txt", "x");
+        writeRaw(folder / "a.txt", "x");
+        writeRaw(folder / "notes.md", "x");
+        std::vector<std::filesystem::path> listed = MazeFile::listMazes(folder);
+        bool listedRight = listed.size() == 2 && listed[0].filename() == "a.txt" && listed[1].filename() == "b.txt";
+        check(listedRight && MazeFile::listMazes(folder / "missing").empty(),
+              "Listing shows only .txt files, sorted by name; a missing folder lists nothing");
+
+        std::filesystem::remove_all(folder, ignored);
+    }
+
+    void testScores()
+    {
+        std::error_code ignored;
+        const std::filesystem::path folder = testFolder();
+        std::filesystem::remove_all(folder, ignored);
+        std::filesystem::create_directories(folder);
+        const std::filesystem::path path = folder / "scores.txt";
+        std::string message;
+
+        // Only fewer turns counts as a new best.
+        ScoreBoard board(path);
+        bool first = board.recordWin(Difficulty::Medium, 70);
+        bool worse = board.recordWin(Difficulty::Medium, 80);
+        bool tie = board.recordWin(Difficulty::Medium, 70);
+        bool better = board.recordWin(Difficulty::Medium, 62);
+        bool invalid = board.recordWin(Difficulty::Easy, 0);
+        check(first && !worse && !tie && better && !invalid && board.getBest(Difficulty::Medium) == 62 &&
+              board.getBest(Difficulty::Easy) == 0,
+              "Best scores: the first win counts, then only fewer turns beat it (ties and worse don't)");
+
+        // Round trip through the file.
+        board.recordWin(Difficulty::Hard, 200);
+        ScoreBoard reloaded(path);
+        bool saved = board.save(message);
+        ScoreBoard::LoadResult result = reloaded.load(message);
+        check(saved && result == ScoreBoard::LoadResult::Loaded && reloaded.getBest(Difficulty::Medium) == 62 &&
+              reloaded.getBest(Difficulty::Hard) == 200 && reloaded.getBest(Difficulty::Easy) == 0 &&
+              readLines(path) == std::vector<std::string>{ "Medium=62", "Hard=200" },
+              "Scores save as readable lines (Medium=62) and load back the same");
+
+        ScoreBoard fresh(folder / "never-saved.txt");
+        check(fresh.load(message) == ScoreBoard::LoadResult::NoFile && fresh.getBest(Difficulty::Easy) == 0,
+              "A missing scores file is treated as a first run, with no scores");
+
+        // A damaged file: the readable line is kept, the rest are reported.
+        writeRaw(path, "Easy=16\r\nMedium=banana\r\nHard=-5\r\nExpert=3\r\nno equals sign\r\nMedium=99999999\r\n");
+        ScoreBoard damaged(path);
+        result = damaged.load(message);
+        check(result == ScoreBoard::LoadResult::Repaired && damaged.getBest(Difficulty::Easy) == 16 &&
+              damaged.getBest(Difficulty::Medium) == 0 && damaged.getBest(Difficulty::Hard) == 0 &&
+              contains(message, "line 2") && contains(message, "line 6"),
+              "A corrupt scores file keeps the good lines and reports the bad ones (text, negative, unknown, too big)");
+
+        writeRaw(path, "Hard=150\nHard=120\n");
+        ScoreBoard twice(path);
+        twice.load(message);
+        check(twice.getBest(Difficulty::Hard) == 120, "If a difficulty appears twice, the better score is kept");
+
+        ScoreBoard blocked(path / "inside-a-file.txt");
+        blocked.recordWin(Difficulty::Easy, 10);
+        message.clear();
+        check(!blocked.save(message) && !message.empty(), "Saving scores somewhere that can't be written reports an error");
+
+        std::filesystem::remove_all(folder, ignored);
+    }
+}
+
 bool SelfTest::runAll()
 {
     std::cout << "MAZE PATHFINDER SELF-TEST\n\n"
@@ -709,6 +951,15 @@ bool SelfTest::runAll()
 
     std::cout << "\nInput edge cases:\n";
     testInputEdgeCases();
+
+    std::cout << "\nSaving mazes:\n";
+    testSaving();
+
+    std::cout << "\nLoading mazes:\n";
+    testLoading();
+
+    std::cout << "\nBest scores:\n";
+    testScores();
 
     std::cout << "\n" << g_passed << " passed, " << g_failed << " failed\n";
     return g_failed == 0;

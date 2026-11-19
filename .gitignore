@@ -429,3 +429,7 @@ FodyWeavers.xsd
 
 # Obsidian vault settings (personal editor config)
 .obsidian/
+
+# Mazes saved while running the program from Visual Studio
+dev/MazePathfinder/mazes/
+dev/MazePathfinder/scores.txt
