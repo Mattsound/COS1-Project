@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-// Built-in mazes the user can pick from. Random generation and loading mazes
-// from files come in later milestones.
+// Built-in mazes the user can pick from. Random mazes come from
+// MazeGenerator, and saved mazes are loaded with MazeFile.
 namespace MazePresets
 {
     struct Preset

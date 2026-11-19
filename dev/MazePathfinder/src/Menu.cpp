@@ -15,12 +15,14 @@
 
 namespace
 {
+    // 0 leaves, the same as "0. Back" in every other menu.
     enum MenuOption
     {
+        Exit = 0,
         SolveMaze = 1,
         PlayMode = 2,
         CompareAlgorithms = 3,
-        Exit = 4
+        HowToPlay = 4
     };
 
     enum NextStep
@@ -32,10 +34,9 @@ namespace
         SaveThisMaze = 4
     };
 
-    // "1 move", "2 turns"
     std::string countText(int count, const std::string& word)
     {
-        return std::to_string(count) + " " + word + (count == 1 ? "" : "s");
+        return ResultView::countText(count, word);
     }
 }
 
@@ -110,21 +111,74 @@ void Menu::showMainMenu() const
               << "        MAZE PATHFINDER\n"
               << "==============================\n"
               << "1. Solve a maze\n"
-              << "     Pick a built-in or random maze and an algorithm, then watch it find the shortest path.\n"
+              << "     Pick a built-in, random or saved maze and an algorithm, then watch it find the shortest path.\n"
               << "2. Play mode\n"
               << "     Reach G before the enemy catches you. It always knows the shortest way to you.\n"
               << "3. Compare algorithms\n"
               << "     Run BFS and A* on the same maze and see which explores fewer cells.\n"
-              << "4. Exit\n";
+              << "4. How to play\n"
+              << "     What each mode does, what the symbols mean, and where files are saved.\n"
+              << "0. Exit\n";
 }
 
 int Menu::readChoice() const
 {
     int choice = 0;
-    if (!InputHelper::readInt("Choose an option", SolveMaze, Exit, choice))
+    if (!InputHelper::readInt("Choose an option", Exit, HowToPlay, choice))
         return Exit; // input ended, so leave instead of looping forever
 
     return choice;
+}
+
+void Menu::showHowToPlay()
+{
+    std::cout << "\n==============================\n"
+              << "         HOW TO PLAY\n"
+              << "==============================\n"
+              << "Type an option's number and press Enter. In every menu, 0 goes back.\n"
+              << "\n"
+              << "SOLVE A MAZE\n"
+              << "  Pick a maze (built-in, random, or saved in a file) and an algorithm:\n"
+              << "  - BFS searches outward from S in every direction, one step at a time.\n"
+              << "  - A* heads toward G first, so it usually explores fewer cells.\n"
+              << "  Both always find a shortest path. Afterward you can see every cell the\n"
+              << "  search explored, try the other algorithm, pick a new maze, or save it.\n"
+              << "\n"
+              << "PLAY MODE\n"
+              << "  You are P. Move with W (up), A (left), S (down), D (right), then Enter.\n"
+              << "  Reach G before the enemy E catches you. E sleeps for a few turns, then\n"
+              << "  chases you along the shortest route, so avoid dead ends.\n";
+
+    // Built from the real settings, so this screen can't drift out of date.
+    for (Difficulty difficulty : { Difficulty::Easy, Difficulty::Medium, Difficulty::Hard })
+    {
+        const Game::Settings settings = Game::getSettings(difficulty);
+        std::cout << "  - " << MazeGenerator::getName(difficulty) << ": E " << Game::describeEnemy(settings);
+        if (settings.extraHeadStart > 0)
+            std::cout << ", " << countText(settings.extraHeadStart, "spare turn");
+        std::cout << ".\n";
+    }
+
+    std::cout << "  A perfect run always escapes. Your fewest turns on each difficulty is saved.\n"
+              << "\n"
+              << "COMPARE ALGORITHMS\n"
+              << "  Runs BFS and A* on the same maze and shows their results side by side.\n"
+              << "\n"
+              << "SYMBOLS\n"
+              << "  S  start                # wall\n"
+              << "  G  goal                 (space)  open cell\n"
+              << "  .  the path found       o  explored, but not on the path\n"
+              << "  P  you (Play mode)      E  the enemy\n"
+              << "  X  where you were caught\n"
+              << "\n"
+              << "FILES\n"
+              << "  Saved mazes: " << MazeFile::getFolder().string() << '\n'
+              << "  You can also draw your own maze in Notepad: use # and spaces, exactly one S\n"
+              << "  and one G, and make every row the same length. Save it as a .txt file there.\n"
+              << "  Best scores: " << m_scores.getPath().string() << '\n';
+
+    if (!InputHelper::waitForEnter())
+        m_running = false;
 }
 
 void Menu::handleChoice(int choice)
@@ -139,6 +193,9 @@ void Menu::handleChoice(int choice)
         break;
     case CompareAlgorithms:
         runMazeSession(Mode::Compare);
+        break;
+    case HowToPlay:
+        showHowToPlay();
         break;
     case Exit:
         m_running = false;
@@ -161,7 +218,7 @@ void Menu::playMaze()
         std::cout << "\nWhat next?\n"
                   << "1. Play again (new " << MazeGenerator::getName(difficulty) << " maze)\n"
                   << "2. Change difficulty\n"
-                  << "0. Back to main menu\n";
+                  << "0. Back to the main menu\n";
 
         int choice = 0;
         if (!askInt("Choose an option", 0, 2, choice))
@@ -189,7 +246,7 @@ bool Menu::chooseDifficulty(Difficulty& difficulty, bool describeEnemy)
             std::cout << ", enemy " << Game::describeEnemy(Game::getSettings(difficulties[i]));
         std::cout << ")\n";
     }
-    std::cout << "0. Back to main menu\n";
+    std::cout << "0. Back to the main menu\n";
 
     int choice = 0;
     if (!askInt("Choose a difficulty", 0, count, choice))
@@ -364,7 +421,7 @@ int Menu::askWhatNext()
               << CompareThisMaze << ". Compare algorithms on this maze\n"
               << NewMaze << ". Pick a new maze\n"
               << SaveThisMaze << ". Save this maze to a file\n"
-              << BackToMainMenu << ". Back to main menu\n";
+              << BackToMainMenu << ". Back to the main menu\n";
 
     int choice = BackToMainMenu;
     if (!askInt("Choose an option", BackToMainMenu, SaveThisMaze, choice))
@@ -469,7 +526,7 @@ bool Menu::chooseMaze()
             std::cout << i + 1 << ". " << presets[i].name << '\n';
         std::cout << randomOption << ". Random maze (choose a difficulty)\n"
                   << fileOption << ". Load a maze from a file\n"
-                  << "0. Back to main menu\n";
+                  << "0. Back to the main menu\n";
 
         int choice = 0;
         if (!askInt("Choose a maze", 0, fileOption, choice))
@@ -556,7 +613,7 @@ bool Menu::loadLayout(const std::vector<std::string>& layout)
     std::string error;
     if (!m_maze.loadFromLayout(layout, error))
     {
-        std::cout << "Could not load that maze: " << error << '\n';
+        std::cout << "  Couldn't load that maze: " << error << '\n';
         return false;
     }
     return true;
@@ -569,7 +626,7 @@ Pathfinder* Menu::choosePathfinder()
     std::cout << "\nChoose an algorithm:\n";
     for (int i = 0; i < count; ++i)
         std::cout << i + 1 << ". " << m_pathfinders[i]->getName() << '\n';
-    std::cout << "0. Back to main menu\n";
+    std::cout << "0. Back to the main menu\n";
 
     int choice = 0;
     if (!askInt("Choose an algorithm", 0, count, choice))

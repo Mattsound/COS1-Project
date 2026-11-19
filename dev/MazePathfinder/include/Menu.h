@@ -35,6 +35,10 @@ private:
     int readChoice() const;
     void handleChoice(int choice);
 
+    // Explains each mode, the symbols, and where files are saved, then waits
+    // for Enter.
+    void showHowToPlay();
+
     // Play mode: pick a difficulty, then play random mazes against the enemy
     // until the user goes back to the main menu.
     void playMaze();

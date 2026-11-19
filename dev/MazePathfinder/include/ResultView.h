@@ -3,6 +3,7 @@
 #include "Pathfinder.h"
 
 #include <memory>
+#include <string>
 #include <vector>
 
 class Maze;
@@ -23,6 +24,9 @@ public:
     // Compare mode: every algorithm side by side, a stats table and a summary.
     void showComparison(const std::vector<PathResult>& results) const;
     void showComparisonExplored(const std::vector<PathResult>& results) const;
+
+    // A count with the word made plural when needed: "1 move", "2 moves".
+    static std::string countText(int count, const std::string& word);
 
 private:
     void printSideBySide(const std::vector<PathResult>& results, bool showExplored) const;
