@@ -134,3 +134,26 @@ The "not a maze" checks also confirm that a rejected file leaves the maze **empt
 | 5 | Back to the main menu, quit | Exits cleanly | `Thanks for playing. Goodbye!` | ✅ |
 
 **Regression:** all 12 scripted sessions are byte-for-byte identical to the #27 baseline.
+
+## Final polish: How to play and consistent prompts (#29)
+
+### What changed (wording and layout only; no feature works differently)
+
+- **"4. How to play"** on the main menu: what each mode does, the difficulty settings, every symbol (S, G, #, space, ., o, P, E, X), and the full paths of the saved mazes folder and the scores file. The difficulty lines are built from `Game::getSettings()`, so they can't go out of date.
+- **"0. Exit"** instead of "4. Exit". Every other menu already used 0 to leave, so 0 now means "back/leave" everywhere.
+- "Back to main menu" is now "Back to **the** main menu" in all five places, matching "Back to the maze list".
+- Correct plurals in results: `Path length: 1 move` (was "1 moves") and "explored 1 fewer cell". `countText()` moved from `Menu` into `ResultView` so both use it.
+- "Could not load that maze" became "  Couldn't load that maze", with the same indent and contraction as every other error.
+- The Solve menu description now mentions saved mazes, and an outdated comment in `MazePresets.h` was fixed.
+
+### Menu tests
+
+| # | Input | Expected | Actual | Pass |
+|---|---|---|---|---|
+| 1 | `4` | How to play screen, then waits | Full screen shown, ending with `Press Enter to return to the main menu...` | ✅ |
+| 2 | Enter | Back to the main menu | Main menu shown with `4. How to play` and `0. Exit` | ✅ |
+| 3 | `5` | Rejected with the new range | `5 isn't an option. Please enter a number from 0-4.` | ✅ |
+| 4 | `0` | Exits | `Thanks for playing. Goodbye!` | ✅ |
+| 5 | `4`, then input ends at "Press Enter" | Exits cleanly, no loop | `Thanks for playing. Goodbye!` | ✅ |
+
+**Regression:** the 9 scripts that exited with `4` now exit with `0`. Then all 12 sessions were compared with the #28 baseline. After replacing only the expected wording (new menu lines, `(0-4)` range, "the main menu"), all 12 are **identical**, so nothing about how the features behave changed. The self-test still passes 98 of 98. The baseline was refreshed afterward.

@@ -11,7 +11,7 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 | #26 | Load a maze from a text file | ✅ Done |
 | #27 | Save and load Play mode best scores | ✅ Done |
 | #28 | Test Save and Load, including bad files | ✅ Done |
-| #29 | Final polish: How to play screen and consistent prompts | 📋 To Do |
+| #29 | Final polish: How to play screen and consistent prompts | ✅ Done |
 
 ## Completed so far
 
@@ -26,11 +26,13 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 - **The File I/O requirement (Save AND Load, handling missing files) is now met.**
 - **Best scores (#27):** a new `ScoreBoard` class keeps the fewest turns to win on each difficulty in `scores.txt`, as readable lines like `Medium=62`. It loads at startup and saves after every win. Play mode shows your best before each game and announces a first win or a new best afterward. A **missing** file just means no wins yet. A **damaged** file keeps every line it can read and reports the rest once at startup, so one bad line never wipes the other scores. A failed save is reported and the game carries on.
 - **Save/Load tests (#28):** 4 more self-test checks (98 total) for every built-in maze round trip, overwriting a bigger file, garbage text, uneven rows, missing goal, two starts, and binary files. Error messages for unprintable characters are now readable (`(character code 0)`, `(a tab)`) instead of printing raw bytes.
+- **Final polish (#29):** a **How to play** screen (main menu option 4) explains each mode, the difficulties, every symbol and where files are saved. **0** now exits the main menu, matching every other menu where 0 goes back. Wording is consistent everywhere ("Back to the main menu", "Couldn't", correct plurals like "1 move").
 
 ## Design decisions
 
 - **Plain text over a custom format:** a maze file is just the maze, so it's readable, editable and easy to check by eye. The trade-off is that a random maze's seed isn't saved, which is fine because the full layout is.
 - **A `mazes` folder next to where the program runs:** saved files are easy to find, the program shows the full path after saving, and the folder is in `.gitignore`, so files saved while testing in Visual Studio don't end up in the repository.
+- **0 = Exit on the main menu:** every submenu already used 0 for "back", so making 0 leave the main menu too means one rule works everywhere. The How to play screen states that rule in its first line.
 
 ## Bugs & Challenges
 

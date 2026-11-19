@@ -32,6 +32,7 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | **Save a maze** to a plain-text file you can open in Notepad (from the What next? menu) | ✅ Done |
 | **Load a maze** from a file (saved ones, or your own drawn in Notepad), with clear messages for missing or broken files | ✅ Done |
 | **Best scores:** fewest turns to win on each difficulty, saved between runs | ✅ Done |
+| **How to play** screen (main menu option 4): every mode, the symbols, and where files are saved | ✅ Done |
 
 ## Class Plan
 
@@ -65,6 +66,7 @@ images/    screenshots
 
 1. Open `dev/MazePathfinder.sln` in Visual Studio 2022 or newer.
 2. Select the **x64** platform and press **Ctrl + F5**.
+3. New here? Choose **4. How to play** on the main menu. Choose **0** to exit.
 
 **Command-line options** (run `dev\x64\Debug\MazePathfinder.exe` from a terminal):
 - `--selftest`: runs the automated checks and exits with code 0 if all pass
