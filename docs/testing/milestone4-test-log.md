@@ -100,3 +100,37 @@ All five use `--seed 4242` on Easy and replay the perfect 16-move route.
 | E | `Easy=30`, **read-only** | A failed save is reported, and the game carries on | `Your score couldn't be saved: Couldn't write "...\scores.txt".` | ✅ |
 
 **Regression:** all 12 scripted sessions still match. The only differences are the new best-score lines in the Play mode sessions.
+
+## Save and Load tests, including bad files (#28)
+
+Most of #28's list was already covered while building #25 to #27 (round trips, missing and empty files, unwritable paths, scores). This pass added the remaining cases: files that are readable text but not valid mazes, binary junk, overwriting, and every built-in maze.
+
+### Self-test additions (now 98 checks, all passing)
+
+```
+Loading mazes:
+  ...
+  PASS  Every built-in maze (including the one with no path) saves and loads back identically
+  PASS  Saving over a bigger maze file replaces it completely (no leftover rows)
+  PASS  Garbage text, uneven rows, a missing goal and two starts are each rejected with a clear reason
+  PASS  A binary file or a tab gives a readable message ("character code 0", "a tab"), not raw bytes
+  ...
+
+98 passed, 0 failed
+```
+
+The "not a maze" checks also confirm that a rejected file leaves the maze **empty**, so a half-loaded maze can never be solved or played by accident.
+
+**Bug found and fixed:** a binary file (or one with a tab) used to print the raw character in the error, e.g. `Unknown character '' at row 1`. A NUL byte or a tab is invisible, and other bytes can garble the console. Now printable characters still show in quotes (`'X'`), and anything else is described: `Unknown character (character code 0) at row 1, column 1.` or `Unknown character (a tab) at row 2, column 3.`
+
+### End-to-end menu test (one session, scratch folder)
+
+| Step | Input | Expected | Actual | Pass |
+|---|---|---|---|---|
+| 1 | Solve, Small maze, BFS | Solves | `Path length: 10 moves` | ✅ |
+| 2 | What next? 4, name `roundtrip` | Saved | `Saved to ...\mazes\roundtrip.txt` | ✅ |
+| 3 | Solve, 5 (load from file), pick `binary.txt` (bytes `00 FF 01 23`) | Readable error, then the picker comes back | `"binary.txt" isn't a valid maze: Unknown character (character code 0) at row 1, column 1.` | ✅ |
+| 4 | 5, pick `roundtrip.txt`, BFS | Loads the same maze, same answer | `Loaded "roundtrip.txt" (9 x 7)`, `Path length: 10 moves` | ✅ |
+| 5 | Back to the main menu, quit | Exits cleanly | `Thanks for playing. Goodbye!` | ✅ |
+
+**Regression:** all 12 scripted sessions are byte-for-byte identical to the #27 baseline.
