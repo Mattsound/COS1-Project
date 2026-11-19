@@ -795,6 +795,55 @@ namespace
         check(!MazeFile::load(folder / "afolder.txt", layout, error) && contains(error, "is a folder"),
               "A folder named like a maze file is reported as a folder, not opened");
 
+        int presetTrips = 0;
+        for (const MazePresets::Preset& preset : MazePresets::getAll())
+        {
+            if (MazeFile::save(preset.layout, folder / "preset.txt", error) &&
+                MazeFile::load(folder / "preset.txt", layout, error) && layout == preset.layout)
+                ++presetTrips;
+        }
+        check(presetTrips == static_cast<int>(MazePresets::getAll().size()),
+              "Every built-in maze (including the one with no path) saves and loads back identically");
+
+        // Replacing a big maze with a small one must not leave old rows behind.
+        MazeFile::save(generator.generate(Difficulty::Hard, 3), folder / "replace.txt", error);
+        const std::vector<std::string> small = { "#####", "#S G#", "#####" };
+        bool replaced = MazeFile::save(small, folder / "replace.txt", error);
+        check(replaced && readLines(folder / "replace.txt") == small,
+              "Saving over a bigger maze file replaces it completely (no leftover rows)");
+
+        // Files that are readable text but not mazes: the file loads, then the
+        // maze rejects it with a reason that says what's wrong and where.
+        auto mazeError = [&](const std::string& name, const std::string& bytes) {
+            writeRaw(folder / name, bytes);
+            std::string reason;
+            Maze maze;
+            if (!MazeFile::load(folder / name, layout, reason))
+                return "file error: " + reason;
+            if (maze.loadFromLayout(layout, reason))
+                return std::string("accepted");
+            return maze.getRows() == 0 ? reason : "rejected but not cleared: " + reason;
+        };
+        const std::string words = mazeError("words.txt", "Hello world\nthis is not a maze\n");
+        const std::string uneven = mazeError("uneven.txt", "#####\n#S G#\n###\n");
+        const std::string noGoal = mazeError("nogoal.txt", "#####\n#S  #\n#####\n");
+        const std::string twoStarts = mazeError("twostarts.txt", "#####\n#SSG#\n#####\n");
+        check(contains(words, "Unknown character 'H' at row 1, column 1") &&
+              contains(uneven, "Row 3 is a different length") && contains(noGoal, "exactly one start (S) and one goal (G)") &&
+              contains(twoStarts, "exactly one start (S) and one goal (G)"),
+              "Garbage text, uneven rows, a missing goal and two starts are each rejected with a clear reason");
+
+        // Binary junk (a NUL byte, 0xFF, a control code) and tabs would print as
+        // invisible or garbled characters, so the message describes them instead.
+        const std::string binary = mazeError("binary.txt", std::string("\0\xFF\x01#\n", 5));
+        const std::string tab = mazeError("tab.txt", "#####\n#S\tG#\n#####\n");
+        bool printable = std::all_of(binary.begin(), binary.end(), [](char c) {
+            return static_cast<unsigned char>(c) >= 32 && static_cast<unsigned char>(c) <= 126;
+        });
+        check(contains(binary, "(character code 0) at row 1, column 1") && printable &&
+              contains(tab, "(a tab) at row 2, column 3"),
+              "A binary file or a tab gives a readable message (\"character code 0\", \"a tab\"), not raw bytes");
+
         // Only .txt files are listed, sorted by name; a missing folder lists nothing.
         std::filesystem::remove_all(folder, ignored);
         writeRaw(folder / "b.txt", "x");

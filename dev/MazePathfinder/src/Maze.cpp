@@ -7,6 +7,19 @@ namespace
 {
     const char PathSymbol = '.';
     const char ExploredSymbol = 'o';
+
+    // How to show a character in an error message. Printable characters are
+    // shown in quotes; a tab or a raw byte from a binary file would be
+    // invisible or garble the console, so those are described instead.
+    std::string describeCharacter(char c)
+    {
+        const unsigned char code = static_cast<unsigned char>(c);
+        if (code >= 32 && code <= 126)
+            return "'" + std::string(1, c) + "'";
+        if (c == '\t')
+            return "(a tab)";
+        return "(character code " + std::to_string(code) + ")";
+    }
 }
 
 bool Maze::loadFromLayout(const std::vector<std::string>& layout, std::string& error)
@@ -44,8 +57,8 @@ bool Maze::loadFromLayout(const std::vector<std::string>& layout, std::string& e
             case 'G': type = CellType::Goal; ++goalCount; break;
             case ' ': type = CellType::Open; break;
             default:
-                error = "Unknown character '" + std::string(1, layout[row][col]) +
-                        "' at row " + std::to_string(row + 1) + ", column " + std::to_string(col + 1) + ".";
+                error = "Unknown character " + describeCharacter(layout[row][col]) +
+                        " at row " + std::to_string(row + 1) + ", column " + std::to_string(col + 1) + ".";
                 clear();
                 return false;
             }
