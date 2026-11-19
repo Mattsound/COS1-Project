@@ -40,7 +40,8 @@ namespace
 }
 
 Menu::Menu()
-    : m_view(m_maze, m_pathfinders)
+    : m_view(m_maze, m_pathfinders),
+      m_scores(std::filesystem::current_path() / "scores.txt")
 {
     m_pathfinders.push_back(std::make_unique<BfsPathfinder>());
     m_pathfinders.push_back(std::make_unique<AStarPathfinder>());
@@ -89,6 +90,11 @@ unsigned int Menu::nextSeed() const
 
 void Menu::run()
 {
+    // A missing scores file just means nothing has been won yet.
+    std::string problems;
+    if (m_scores.load(problems) == ScoreBoard::LoadResult::Repaired)
+        std::cout << "Note: some saved best scores couldn't be read and were reset: " << problems << ".\n";
+
     while (m_running)
     {
         showMainMenu();
@@ -219,6 +225,13 @@ void Menu::playOneGame(Difficulty difficulty)
               << Game::describeEnemy(settings) << ".\n"
               << "It always knows the shortest way to you, so watch out for dead ends.\n";
 
+    const std::string difficultyName = MazeGenerator::getName(difficulty);
+    const int best = m_scores.getBest(difficulty);
+    if (best == 0)
+        std::cout << "No best score on " << difficultyName << " yet. Win to set one!\n";
+    else
+        std::cout << "Your best on " << difficultyName << ": " << countText(best, "turn") << ".\n";
+
     const std::string help = "Use W (up), A (left), S (down), D (right), or Q to quit.";
     bool redraw = true;
     bool wasAwake = game.isEnemyAwake();
@@ -272,6 +285,22 @@ void Menu::playOneGame(Difficulty difficulty)
                   << "The shortest route was " << countText(shortestRoute, "move") << ".\n";
         if (game.getTurn() == shortestRoute)
             std::cout << "Perfect run: you matched the pathfinder!\n";
+
+        if (m_scores.recordWin(difficulty, game.getTurn()))
+        {
+            if (best == 0)
+                std::cout << "That's your first win on " << difficultyName << ", so it's your best so far!\n";
+            else
+                std::cout << "New best on " << difficultyName << "! (Your old best was " << countText(best, "turn") << ".)\n";
+
+            std::string error;
+            if (!m_scores.save(error))
+                std::cout << "  Your score couldn't be saved: " << error << '\n';
+        }
+        else
+        {
+            std::cout << "Your best on " << difficultyName << " is still " << countText(best, "turn") << ".\n";
+        }
     }
     else
     {

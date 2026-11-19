@@ -432,3 +432,4 @@ FodyWeavers.xsd
 
 # Mazes saved while running the program from Visual Studio
 dev/MazePathfinder/mazes/
+dev/MazePathfinder/scores.txt

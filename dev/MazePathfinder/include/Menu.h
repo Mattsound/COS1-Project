@@ -4,6 +4,7 @@
 #include "MazeGenerator.h"
 #include "Pathfinder.h"
 #include "ResultView.h"
+#include "ScoreBoard.h"
 
 #include <memory>
 #include <vector>
@@ -98,6 +99,9 @@ private:
     // Prints results. Declared after m_maze and m_pathfinders because it keeps
     // references to them, and members are built in declaration order.
     ResultView m_view;
+
+    // Play mode best scores, loaded at startup and saved after every win.
+    ScoreBoard m_scores;
 
     bool m_running = true;
     bool m_hasFixedSeed = false;
