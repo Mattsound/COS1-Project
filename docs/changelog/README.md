@@ -7,4 +7,4 @@ One file per milestone, covering what changed, bugs found and fixed, and design 
 | 1 | [milestone1-progress.md](milestone1-progress.md) |
 | 2 | [milestone2-progress.md](milestone2-progress.md) |
 | 3 | [milestone3-progress.md](milestone3-progress.md) |
-| 4 | [milestone4-progress.md](milestone4-progress.md) (in progress) |
+| 4 | [milestone4-progress.md](milestone4-progress.md) |

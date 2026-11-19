@@ -155,3 +155,32 @@ I leveled up on **refactoring safely**. Before changing anything, I saved the ex
 ### 🔮 Next Steps
 - **Week 4: Save and Load (#11).** Save mazes (seed and size, or the full layout for custom mazes), and handle missing or broken files without crashing.
 - Final documentation, the showcase, and the final Pull Request.
+
+## Week 4
+
+### 🔎 Overview
+This was the final week. I added **File I/O**, tested it against every bad file I could think of, and polished the program:
+- **Save a maze (#25):** "Save this maze to a file" in the What next? menu writes the maze as plain text, so it opens in Notepad.
+- **Load a maze (#26):** "Load a maze from a file" in the maze picker lists every saved maze, plus any maze drawn by hand in Notepad.
+- **Best scores (#27):** a new `ScoreBoard` class saves the fewest turns to win on each difficulty to `scores.txt` and loads it when the program starts.
+- **Save/Load tests (#28):** the self-test went from 76 to **98 checks**, including garbage, uneven, binary and overwritten files.
+- **Final polish (#29):** a **How to play** screen, **0** to exit like every other menu, and consistent wording everywhere.
+
+### 🧹 Improvements
+- **Readable error messages for bad files:** a broken maze file says exactly what's wrong and where (`Row 3 is a different length than the first row.`), and a binary file says `(character code 0)` instead of printing invisible bytes.
+- **Notepad-friendly loading:** Notepad's invisible byte order mark, Windows line endings and trailing blank lines are all handled.
+- **A damaged scores file is repaired, not wiped:** good lines are kept, and bad ones are reported once.
+- **Consistent menus:** 0 always means back or exit, "Back to the main menu" is worded the same everywhere, and plurals are correct ("1 move").
+- **Shared code:** `countText()` moved into `ResultView` so `Menu` and the results use one helper.
+
+### 🧟 Challenges
+- **Files are messier than keyboard input.** A maze I drew in Notepad failed to load with "Unknown character" on row 1, even though it looked perfect. Notepad had added three invisible bytes (a byte order mark) at the start and `\r` at the end of every line. `MazeFile::load()` now strips both, and a self-test writes those exact bytes to prove it.
+- **Testing without making a mess.** My first test runs could have saved files into whatever folder they ran from. The self-test now uses a temp folder it deletes afterward, and my scripted tests run in their own scratch folder.
+- **Making sure scores really persist.** One run can't prove that. I ran the program five separate times in a row: a first win, a tie, beating an older score, a corrupt file, and a read-only file.
+
+### 🏆 Accomplishments
+I leveled up on **File I/O and defensive programming**. I learned to treat every file as untrusted input: it might be missing, empty, a folder, too big, edited by hand or not text at all. Every case now gives a clear message instead of a crash. I also kept `ScoreBoard` free of console output, just like `Game` in Week 3, so the self-test could check each of those cases automatically.
+
+### 🔮 Next Steps
+- **Showcase presentation** and the final Pull Request into `main`.
+- Future ideas: score by *extra moves* over the shortest route instead of turns, split the save/load screens out of `Menu` (now 640 lines), and save a Play mode game in progress.

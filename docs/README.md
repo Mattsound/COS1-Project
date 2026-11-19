@@ -11,3 +11,4 @@ Project documentation.
 | `MMoreno-Milestone2-Planning.md` | Milestone 2 planning worksheet |
 | `MMoreno_Milestone2.md` | Milestone 2 Build Prototype: what changed in Week 2 and why |
 | `Milestone3.md` | Milestone 3: features, system design, refactoring, and what changed and why in Week 3 |
+| `Milestone4.md` | Milestone 4: File I/O (what gets saved and why), handling bad files, testing, and the final requirements checklist |

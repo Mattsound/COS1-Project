@@ -1,4 +1,4 @@
-# Milestone 4 Progress Notes (in progress)
+# Milestone 4 Progress Notes
 
 Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final showcase.
 
@@ -43,6 +43,8 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 | A good maze drawn in Notepad could fail to load | Notepad can add an invisible byte order mark and Windows (`\r\n`) line endings; `load()` strips both |
 | A binary file printed raw, invisible bytes in its error message | `Maze` now describes unprintable characters: `(character code 0)`, `(a tab)` |
 
-## Possible future improvement
+## Possible future improvements
 
 Best scores count **turns**, but random mazes vary in length, so a lucky short maze makes an easier record. A fairer score would be the **extra moves** compared with the shortest route, where 0 means a perfect run. I kept turns because that's what Issue #27 specified, and it's easy to understand.
+
+`Menu.cpp` grew from 364 to 640 lines with the save, load, scores and How to play screens. The file screens could move into their own class, the same way `ResultView` took over result printing in Week 3.

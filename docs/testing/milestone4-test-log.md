@@ -1,6 +1,8 @@
-# Milestone 4 Test Log (in progress)
+# Milestone 4 Test Log
 
 **Build:** Visual Studio 2026 (MSBuild 18, toolset v145), C++20, Debug | x64. Build succeeded, 0 warnings, 0 errors.
+
+**Final result (end of Week 4):** the self-test passes **98 of 98** checks, and all 12 scripted menu sessions behave the same as before each change (the only differences were the new menu lines each Issue added). Issues #25-#29 are all Done.
 
 ## Saving a maze (#25)
 
