@@ -10,6 +10,7 @@
 #include "Game.h"
 #include "InputHelper.h"
 #include "Player.h"
+#include "ScoreBoard.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -806,6 +807,62 @@ namespace
 
         std::filesystem::remove_all(folder, ignored);
     }
+
+    void testScores()
+    {
+        std::error_code ignored;
+        const std::filesystem::path folder = testFolder();
+        std::filesystem::remove_all(folder, ignored);
+        std::filesystem::create_directories(folder);
+        const std::filesystem::path path = folder / "scores.txt";
+        std::string message;
+
+        // Only fewer turns counts as a new best.
+        ScoreBoard board(path);
+        bool first = board.recordWin(Difficulty::Medium, 70);
+        bool worse = board.recordWin(Difficulty::Medium, 80);
+        bool tie = board.recordWin(Difficulty::Medium, 70);
+        bool better = board.recordWin(Difficulty::Medium, 62);
+        bool invalid = board.recordWin(Difficulty::Easy, 0);
+        check(first && !worse && !tie && better && !invalid && board.getBest(Difficulty::Medium) == 62 &&
+              board.getBest(Difficulty::Easy) == 0,
+              "Best scores: the first win counts, then only fewer turns beat it (ties and worse don't)");
+
+        // Round trip through the file.
+        board.recordWin(Difficulty::Hard, 200);
+        ScoreBoard reloaded(path);
+        bool saved = board.save(message);
+        ScoreBoard::LoadResult result = reloaded.load(message);
+        check(saved && result == ScoreBoard::LoadResult::Loaded && reloaded.getBest(Difficulty::Medium) == 62 &&
+              reloaded.getBest(Difficulty::Hard) == 200 && reloaded.getBest(Difficulty::Easy) == 0 &&
+              readLines(path) == std::vector<std::string>{ "Medium=62", "Hard=200" },
+              "Scores save as readable lines (Medium=62) and load back the same");
+
+        ScoreBoard fresh(folder / "never-saved.txt");
+        check(fresh.load(message) == ScoreBoard::LoadResult::NoFile && fresh.getBest(Difficulty::Easy) == 0,
+              "A missing scores file is treated as a first run, with no scores");
+
+        // A damaged file: the readable line is kept, the rest are reported.
+        writeRaw(path, "Easy=16\r\nMedium=banana\r\nHard=-5\r\nExpert=3\r\nno equals sign\r\nMedium=99999999\r\n");
+        ScoreBoard damaged(path);
+        result = damaged.load(message);
+        check(result == ScoreBoard::LoadResult::Repaired && damaged.getBest(Difficulty::Easy) == 16 &&
+              damaged.getBest(Difficulty::Medium) == 0 && damaged.getBest(Difficulty::Hard) == 0 &&
+              contains(message, "line 2") && contains(message, "line 6"),
+              "A corrupt scores file keeps the good lines and reports the bad ones (text, negative, unknown, too big)");
+
+        writeRaw(path, "Hard=150\nHard=120\n");
+        ScoreBoard twice(path);
+        twice.load(message);
+        check(twice.getBest(Difficulty::Hard) == 120, "If a difficulty appears twice, the better score is kept");
+
+        ScoreBoard blocked(path / "inside-a-file.txt");
+        blocked.recordWin(Difficulty::Easy, 10);
+        message.clear();
+        check(!blocked.save(message) && !message.empty(), "Saving scores somewhere that can't be written reports an error");
+
+        std::filesystem::remove_all(folder, ignored);
+    }
 }
 
 bool SelfTest::runAll()
@@ -851,6 +908,9 @@ bool SelfTest::runAll()
 
     std::cout << "\nLoading mazes:\n";
     testLoading();
+
+    std::cout << "\nBest scores:\n";
+    testScores();
 
     std::cout << "\n" << g_passed << " passed, " << g_failed << " failed\n";
     return g_failed == 0;
