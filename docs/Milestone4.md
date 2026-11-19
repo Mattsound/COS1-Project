@@ -161,7 +161,7 @@ As in Week 3, only `Menu` talks to the console. `MazeFile` and `ScoreBoard` retu
 - **Week 4 Issues** (created Monday 11/16, all on the board): **#25** Save a maze, **#26** Load a maze, **#27** Best scores, **#28** Save/Load tests, **#29** How to play and prompt polish. **#11** (Save and Load) was the parent feature.
 - Each Issue moved To Do → In Progress → Done as it was worked on. #28 and #29 started in Backlog and were moved to To Do once they were planned for this week, because Backlog is for ideas I won't finish in the course.
 - **Commits were spread across the week:** 6 on Monday (#25, #26) and 7 on Wednesday (#27, #28, #29), each one a single change with its Issue number.
-- **The final Pull Request** merges all of Week 4 from `dev` into `main` and is linked to the board.
+- **Pull Request #30** (the final one) merges all of Week 4, including this document, from `dev` into `main` and is linked to the board.
 - **Board at the end of the course:** every Issue Done, nothing left in To Do or In Progress.
 
 ## 🔮 Possible Future Improvements
