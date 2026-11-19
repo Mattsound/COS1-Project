@@ -6,10 +6,10 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 
 | Issue | Work | Status |
 |---|---|---|
-| #11 | Save and Load (parent) | 🚧 In Progress |
+| #11 | Save and Load (parent) | ✅ Done |
 | #25 | Save the current maze to a text file | ✅ Done |
 | #26 | Load a maze from a text file | ✅ Done |
-| #27 | Save and load Play mode best scores | 📝 To Do |
+| #27 | Save and load Play mode best scores | ✅ Done |
 | #28 | Test Save and Load, including bad files | 📥 Backlog |
 | #29 | Final polish: How to play screen and consistent prompts | 📥 Backlog |
 
@@ -24,6 +24,7 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 - **`InputHelper::readText()`** and `Menu::askText()` for typed text, following the same end-of-input pattern as the other prompts.
 - **Loading (#26):** `MazeFile::load()` reads a file line by line, handles Notepad's byte order mark, Windows line endings and trailing blank lines, and rejects missing, empty, too-big or folder paths with a clear message. `MazeFile::listMazes()` lists the saved `.txt` files. In the maze picker, **"5. Load a maze from a file"** shows them by number. A file that isn't a valid maze gets the same specific reasons as the built-in checks (e.g. *"Row 3 is a different length than the first row"*), and the picker comes back instead of leaving the user stuck.
 - **The File I/O requirement (Save AND Load, handling missing files) is now met.**
+- **Best scores (#27):** a new `ScoreBoard` class keeps the fewest turns to win on each difficulty in `scores.txt`, as readable lines like `Medium=62`. It loads at startup and saves after every win. Play mode shows your best before each game and announces a first win or a new best afterward. A **missing** file just means no wins yet. A **damaged** file keeps every line it can read and reports the rest once at startup, so one bad line never wipes the other scores. A failed save is reported and the game carries on.
 
 ## Design decisions
 
@@ -37,3 +38,7 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 | Error text "can't contain :." was confusing | Show the character in quotes: `can't contain ":"` |
 | A test run could save a file into whatever folder it ran from | The test scripts now run in their own scratch folder, and the self-test uses a temp folder it deletes afterward |
 | A good maze drawn in Notepad could fail to load | Notepad can add an invisible byte order mark and Windows (`\r\n`) line endings; `load()` strips both |
+
+## Possible future improvement
+
+Best scores count **turns**, but random mazes vary in length, so a lucky short maze makes an easier record. A fairer score would be the **extra moves** compared with the shortest route, where 0 means a perfect run. I kept turns because that's what Issue #27 specified, and it's easy to understand.

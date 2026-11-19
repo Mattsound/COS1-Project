@@ -31,7 +31,7 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | **Play mode:** reach G with W/A/S/D before an enemy that chases you with A* catches you; Easy, Medium or Hard, always winnable | ✅ Done |
 | **Save a maze** to a plain-text file you can open in Notepad (from the What next? menu) | ✅ Done |
 | **Load a maze** from a file (saved ones, or your own drawn in Notepad), with clear messages for missing or broken files | ✅ Done |
-| Save Play mode best scores | 🚧 Milestone 4 |
+| **Best scores:** fewest turns to win on each difficulty, saved between runs | ✅ Done |
 
 ## Class Plan
 
@@ -45,6 +45,8 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | `BfsPathfinder` | Breadth-First Search, which always finds the shortest path | ✅ |
 | `AStarPathfinder` | A* search with a Manhattan-distance heuristic, which usually explores far fewer cells than BFS | ✅ |
 | `MazeGenerator` | Builds random perfect mazes from a seed with the recursive backtracker (randomized DFS) | ✅ |
+| `MazeFile` | Saves and loads mazes as plain-text files, checks file names, lists saved mazes | ✅ |
+| `ScoreBoard` | Play mode best scores, saved to and loaded from `scores.txt` | ✅ |
 | `Player` | Play mode: moves one cell at a time with W/A/S/D, refusing walls and the grid edge | ✅ |
 | `Enemy` | Play mode: re-plans with a `Pathfinder` every turn and moves toward the player (speed is adjustable) | ✅ |
 | `Game` | Play mode rules (turns, win/lose, difficulty) and a fair enemy start with a calculated head start; no console I/O, so it can be self-tested | ✅ |

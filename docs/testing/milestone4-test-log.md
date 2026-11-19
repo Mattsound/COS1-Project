@@ -70,3 +70,33 @@ Loading mazes:
 | 8 | Save it as `copy`, then Compare, then load `copy.txt` | A full save/load round trip through the menus | `Saved to ...\copy.txt`, then `Loaded "copy.txt" (7 x 5)` with the side-by-side comparison | ✅ |
 
 **Regression:** all 12 scripted sessions still run. The only difference is the new "5. Load a maze from a file" line in the maze picker.
+
+## Best scores (#27)
+
+### Self-test additions (now 94 checks, all passing)
+
+```
+Best scores:
+  PASS  Best scores: the first win counts, then only fewer turns beat it (ties and worse don't)
+  PASS  Scores save as readable lines (Medium=62) and load back the same
+  PASS  A missing scores file is treated as a first run, with no scores
+  PASS  A corrupt scores file keeps the good lines and reports the bad ones (text, negative, unknown, too big)
+  PASS  If a difficulty appears twice, the better score is kept
+  PASS  Saving scores somewhere that can't be written reports an error
+
+94 passed, 0 failed
+```
+
+### Menu tests: five runs in a row in the same scratch folder
+
+All five use `--seed 4242` on Easy and replay the perfect 16-move route.
+
+| Run | Scores file before | Expected | Actual | Pass |
+|---|---|---|---|---|
+| A | (none) | First win is the best so far | `No best score on Easy yet. Win to set one!` ... `That's your first win on Easy, so it's your best so far!`; the file is now `Easy=16` | ✅ |
+| B | `Easy=16` | A tie doesn't count as a new best | `Your best on Easy: 16 turns.` ... `Your best on Easy is still 16 turns.` | ✅ |
+| C | `Easy=20` (edited by hand) | Beats the old score | `New best on Easy! (Your old best was 20 turns.)`; the file is now `Easy=16` | ✅ |
+| D | `Easy=abc`, `Medium=5` | The bad line is reported and reset; Medium is kept | `Note: some saved best scores couldn't be read and were reset: line 1 ("Easy=abc").`; the file afterward is `Easy=16`, `Medium=5` | ✅ |
+| E | `Easy=30`, **read-only** | A failed save is reported, and the game carries on | `Your score couldn't be saved: Couldn't write "...\scores.txt".` | ✅ |
+
+**Regression:** all 12 scripted sessions still match. The only differences are the new best-score lines in the Play mode sessions.
