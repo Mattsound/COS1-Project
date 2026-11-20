@@ -12,6 +12,9 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 | #27 | Save and load Play mode best scores | ✅ Done |
 | #28 | Test Save and Load, including bad files | ✅ Done |
 | #29 | Final polish: How to play screen and consistent prompts | ✅ Done |
+| #31 | Fairer best scores (extra moves) | 📥 Backlog (future idea) |
+| #32 | Refactor: move the Save and Load screens out of Menu | ✅ Done |
+| #33 | Save and resume a Play mode game | 📥 Backlog (future idea) |
 
 ## Completed so far
 
@@ -27,6 +30,7 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 - **Best scores (#27):** a new `ScoreBoard` class keeps the fewest turns to win on each difficulty in `scores.txt`, as readable lines like `Medium=62`. It loads at startup and saves after every win. Play mode shows your best before each game and announces a first win or a new best afterward. A **missing** file just means no wins yet. A **damaged** file keeps every line it can read and reports the rest once at startup, so one bad line never wipes the other scores. A failed save is reported and the game carries on.
 - **Save/Load tests (#28):** 4 more self-test checks (98 total) for every built-in maze round trip, overwriting a bigger file, garbage text, uneven rows, missing goal, two starts, and binary files. Error messages for unprintable characters are now readable (`(character code 0)`, `(a tab)`) instead of printing raw bytes.
 - **Final polish (#29):** a **How to play** screen (main menu option 4) explains each mode, the difficulties, every symbol and where files are saved. **0** now exits the main menu, matching every other menu where 0 goes back. Wording is consistent everywhere ("Back to the main menu", "Couldn't", correct plurals like "1 move").
+- **`MazeFileMenu` refactor (#32):** the Save and Load screens moved out of `Menu` (640 → 550 lines) into a class that holds a `Maze&` and returns a `LoadResult` instead of setting `Menu`'s flags. Byte-for-byte identical output, checked against the previous build on 9 save/load scenarios.
 
 ## Design decisions
 
@@ -47,4 +51,4 @@ Week 4 focus: **File I/O (Save and Load)**, then testing, polish, and the final 
 
 Best scores count **turns**, but random mazes vary in length, so a lucky short maze makes an easier record. A fairer score would be the **extra moves** compared with the shortest route, where 0 means a perfect run. I kept turns because that's what Issue #27 specified, and it's easy to understand.
 
-`Menu.cpp` grew from 364 to 640 lines with the save, load, scores and How to play screens. The file screens could move into their own class, the same way `ResultView` took over result printing in Week 3.
+`Menu.cpp` grew from 364 to 640 lines with the save, load, scores and How to play screens. **Done in #32:** the Save and Load screens now live in `MazeFileMenu`, and `Menu.cpp` is 550 lines.

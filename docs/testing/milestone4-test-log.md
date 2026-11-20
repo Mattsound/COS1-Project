@@ -159,3 +159,39 @@ The "not a maze" checks also confirm that a rejected file leaves the maze **empt
 | 5 | `4`, then input ends at "Press Enter" | Exits cleanly, no loop | `Thanks for playing. Goodbye!` | ✅ |
 
 **Regression:** the 9 scripts that exited with `4` now exit with `0`. Then all 12 sessions were compared with the #28 baseline. After replacing only the expected wording (new menu lines, `(0-4)` range, "the main menu"), all 12 are **identical**, so nothing about how the features behave changed. The self-test still passes 98 of 98. The baseline was refreshed afterward.
+
+## Refactor: Save and Load screens moved into `MazeFileMenu` (#32)
+
+**Goal:** a structural change only. Nothing the user sees should change.
+
+| Check | Result |
+|---|---|
+| Clean rebuild (Debug, x64) | ✅ Build succeeded, 0 warnings, 0 errors |
+| Self-test | ✅ 98 passed, 0 failed |
+| 12 fixed-seed scripted sessions vs. the #29 baseline | ✅ 12 / 12 byte-for-byte identical |
+| Previous build vs. new build, 9 save/load scenarios, outputs **and** saved files compared | ✅ 9 / 9 identical |
+
+The 9 save/load scenarios:
+
+| Scenario | What it covers |
+|---|---|
+| `save_names` | Blank, `bad:name` and `CON` names, saving, then replacing (`n`, then `y`) |
+| `load_broken` | Loading broken, empty and good hand-made files, then a save/load round trip |
+| `binary_then_ok` | A binary file is rejected with a readable reason, then a saved maze loads |
+| `eof_at_name` | Input ends at "File name" |
+| `eof_at_replace` | Input ends at "already exists. Replace it?" |
+| `eof_at_picker` | Input ends at "Choose a file" |
+| `picker_back` | `0` at the file list returns to the maze picker |
+| `no_mazes` | No `mazes` folder: the explanation, then back to the picker |
+| `cancel_save` | `0` at the file name cancels with "Not saved." |
+
+`Menu.cpp`: 640 → 550 lines. New: `include/MazeFileMenu.h`, `src/MazeFileMenu.cpp`.
+
+## Final screenshots
+
+Saved in `images/`:
+- `final-run.png`: a full rebuild (`MSBuild /t:Rebuild`, Debug x64): "Build succeeded", 0 warnings, 0 errors, with all 18 source files compiled
+- `final-features.png`: Solve a maze, Small maze, BFS, then the explored-cells overlay (10-move path, 21 cells explored)
+- `final-features-compare.png`: Compare mode on the Medium maze. A* explored 27 fewer cells than BFS (40% less), and both found the 30-move shortest path.
+
+The menu choices were typed from a file, so they don't appear on screen. Everything else is the program's real output.
