@@ -186,3 +186,30 @@ I leveled up on **File I/O and defensive programming**. I learned to treat every
 ### 🔮 Next Steps
 - **Showcase presentation** and the final Pull Request into `main`.
 - Future ideas (in Backlog): score by *extra moves* over the shortest route instead of turns (#31), and save a Play mode game in progress (#33).
+
+## 🏁 Final Project Stand-Up
+
+### ⚙️ Overview
+This week I added **File I/O** and finished the project:
+- **Save and load mazes** as plain-text files (you can even draw your own in Notepad)
+- **Best scores** for Play mode, saved between runs
+- The final PRs merged into `main`, and every planned Issue on my board is Done
+
+### 🛠️ Project Wrap-Up
+- Tested Save/Load against every bad file I could think of: missing, empty, uneven, binary, and read-only. Each one gets a clear message instead of a crash.
+- Added a **How to play** screen and made every menu consistent (0 always goes back or exits).
+- Moved the Save and Load screens out of `Menu` into a new `MazeFileMenu` class (#32), so `Menu.cpp` went from 640 to 550 lines with no change in behavior.
+- The self-test grew to **98 automated checks**.
+- Finished the docs: Milestone 4 write-up, test logs, final screenshots, and a requirements checklist.
+
+### 🌵 Challenges
+- A maze I drew in Notepad wouldn't load even though it looked perfect. Notepad had added invisible bytes and Windows line endings, so my loader now strips both.
+- Earlier, my first Play mode made most games unwinnable. My automated tests caught it, and I fixed it by calculating a fair head start for the enemy.
+
+### 📚 Biggest Takeaway
+**Test your own code automatically.** I came in worried about pointers and debugging. A `--selftest` mode that plays hundreds of games found bugs I never would have caught by hand. It also let me refactor safely, because I could prove the output didn't change. Breaking work into small GitHub Issues kept a big project manageable.
+
+### 🔮 Future Development
+- Score by *extra moves* over the shortest route instead of turns (#31)
+- Save and resume a game in progress (#33)
+- Long term: add weighted search (Dijkstra), since my degree is in AI and pathfinding is a core AI topic
