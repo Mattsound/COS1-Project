@@ -148,6 +148,7 @@ By Wednesday, the save, load, scores and How to play screens had grown `Menu.cpp
   - All file tests use a private temp folder that is deleted afterward, so testing never touches the user's real mazes or scores
 - **Menu tests:** every prompt was tested with good input, bad input, and input ending early. For best scores, five separate program runs in a row confirmed that scores really persist between runs: a first win, a tie, beating an old score, a corrupt file, and a read-only file.
 - **Regression:** the 12 fixed-seed scripted sessions from Week 3 were compared with the previous version after every Issue. The only differences were the new menu lines each Issue added, and the #32 refactor changed nothing at all.
+- **Final whole-application test:** a fresh clone of the public repo builds in Debug and Release, and 20 runs of 3,000 random inputs each (bad numbers, huge lines, Unicode, reserved file names, random moves) never crashed or hung. That covered about 270 Play mode games and 280 solves.
 - **Final screenshots** are in `images/`:
   - `final-run.png`: a full rebuild, with "Build succeeded, 0 Warning(s), 0 Error(s)"
   - `final-features.png`: Solve a maze with BFS, then the explored-cells overlay
@@ -198,7 +199,8 @@ By Wednesday, the save, load, scores and How to play screens had grown `Menu.cpp
 - **Commits were spread across the week:** 6 on Monday (#25, #26) and 7 on Wednesday (#27, #28, #29), each one a single change with its Issue number.
 - **Pull Request #30** merged #25–#29 and this document from `dev` into `main` on Wednesday, linked to the board.
 - On Wednesday I added my three future ideas to **Backlog** (#31, #32, #33) so the board shows what I'd do next. On Friday I pulled **#32** (the `Menu` split) back in for the final milestone's objects and refactoring step, and it went Backlog → In Progress → Done.
-- **Pull Request #34** (the final one) merges #32 and the final screenshots into `main`.
+- **Pull Request #34** merged #32 and the final screenshots into `main`.
+- **Pull Request #35** (the final one) adds my Final Project Stand-Up to the README.
 - **Board at the end of the course:** every planned Issue Done, nothing in To Do or In Progress, and #31 and #33 in Backlog as future ideas.
 
 ## 🔮 Possible Future Improvements
