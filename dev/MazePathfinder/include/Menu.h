@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Maze.h"
+#include "MazeFileMenu.h"
 #include "MazeGenerator.h"
 #include "Pathfinder.h"
 #include "ResultView.h"
@@ -29,7 +30,6 @@ private:
     bool askInt(const std::string& prompt, int min, int max, int& result);
     bool askKey(const std::string& prompt, const std::string& validKeys, const std::string& help, char& result);
     bool askYesNo(const std::string& prompt, bool& result);
-    bool askText(const std::string& prompt, std::string& result);
 
     void showMainMenu() const;
     int readChoice() const;
@@ -67,18 +67,9 @@ private:
     // which is also returned if input ended).
     int askWhatNext();
 
-    // Asks for a file name and saves m_maze to the mazes folder. Asks before
-    // replacing a file that already exists.
-    void saveCurrentMaze();
-
     // Lets the user pick a built-in, random or saved maze and loads it into
     // m_maze. Returns false if they went back or input ended.
     bool chooseMaze();
-
-    // Lists the saved maze files and loads the one the user picks. Returns
-    // false (after explaining why) if there are none, the user went back, or
-    // the file couldn't be loaded.
-    bool chooseFileMaze();
 
     // Asks for a difficulty, then generates and loads a new random maze.
     bool chooseRandomMaze();
@@ -103,6 +94,10 @@ private:
     // Prints results. Declared after m_maze and m_pathfinders because it keeps
     // references to them, and members are built in declaration order.
     ResultView m_view;
+
+    // The Save and Load screens. Also keeps a reference to m_maze, so it's
+    // declared after it too.
+    MazeFileMenu m_fileMenu;
 
     // Play mode best scores, loaded at startup and saved after every win.
     ScoreBoard m_scores;
