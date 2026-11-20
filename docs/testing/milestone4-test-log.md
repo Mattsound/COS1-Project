@@ -190,5 +190,8 @@ The 9 save/load scenarios:
 ## Final screenshots
 
 Saved in `images/`:
-- `final-run.png`: successful compilation in Visual Studio
-- `final-features.png`: the program running with its key features
+- `final-run.png`: a full rebuild (`MSBuild /t:Rebuild`, Debug x64): "Build succeeded", 0 warnings, 0 errors, with all 18 source files compiled
+- `final-features.png`: Solve a maze, Small maze, BFS, then the explored-cells overlay (10-move path, 21 cells explored)
+- `final-features-compare.png`: Compare mode on the Medium maze. A* explored 27 fewer cells than BFS (40% less), and both found the 30-move shortest path.
+
+The menu choices were typed from a file, so they don't appear on screen. Everything else is the program's real output.

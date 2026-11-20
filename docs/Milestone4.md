@@ -148,7 +148,14 @@ By Wednesday, the save, load, scores and How to play screens had grown `Menu.cpp
   - All file tests use a private temp folder that is deleted afterward, so testing never touches the user's real mazes or scores
 - **Menu tests:** every prompt was tested with good input, bad input, and input ending early. For best scores, five separate program runs in a row confirmed that scores really persist between runs: a first win, a tie, beating an old score, a corrupt file, and a read-only file.
 - **Regression:** the 12 fixed-seed scripted sessions from Week 3 were compared with the previous version after every Issue. The only differences were the new menu lines each Issue added, and the #32 refactor changed nothing at all.
-- **Final screenshots** are in `images/`: `final-run.png` (successful compilation) and `final-features.png` (the program running with its key features).
+- **Final screenshots** are in `images/`:
+  - `final-run.png`: a full rebuild, with "Build succeeded, 0 Warning(s), 0 Error(s)"
+  - `final-features.png`: Solve a maze with BFS, then the explored-cells overlay
+  - `final-features-compare.png`: Compare mode, BFS and A* side by side with the stats table
+
+![Successful rebuild](../images/final-run.png)
+![Solve with the explored overlay](../images/final-features.png)
+![Compare mode](../images/final-features-compare.png)
 
 **Bugs found and fixed this week**
 
