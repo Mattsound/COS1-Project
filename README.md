@@ -47,6 +47,7 @@ Maze Pathfinder draws mazes in the console as ASCII art and solves them with rea
 | `AStarPathfinder` | A* search with a Manhattan-distance heuristic, which usually explores far fewer cells than BFS | ✅ |
 | `MazeGenerator` | Builds random perfect mazes from a seed with the recursive backtracker (randomized DFS) | ✅ |
 | `MazeFile` | Saves and loads mazes as plain-text files, checks file names, lists saved mazes | ✅ |
+| `MazeFileMenu` | The Save and Load screens: asks for a file name, lists saved mazes and explains problems; holds a reference to `Menu`'s maze | ✅ |
 | `ScoreBoard` | Play mode best scores, saved to and loaded from `scores.txt` | ✅ |
 | `Player` | Play mode: moves one cell at a time with W/A/S/D, refusing walls and the grid edge | ✅ |
 | `Enemy` | Play mode: re-plans with a `Pathfinder` every turn and moves toward the player (speed is adjustable) | ✅ |
@@ -172,6 +173,7 @@ This was the final week. I added **File I/O**, tested it against every bad file 
 - **A damaged scores file is repaired, not wiped:** good lines are kept, and bad ones are reported once.
 - **Consistent menus:** 0 always means back or exit, "Back to the main menu" is worded the same everywhere, and plurals are correct ("1 move").
 - **Shared code:** `countText()` moved into `ResultView` so `Menu` and the results use one helper.
+- **`MazeFileMenu` class (#32):** moved the Save and Load screens out of `Menu`, which went from 640 to 550 lines. The new class holds a reference to the maze and returns a result (`Loaded`, `NotLoaded` or `InputEnded`) instead of reaching into `Menu`. The output stayed byte-for-byte identical.
 
 ### 🧟 Challenges
 - **Files are messier than keyboard input.** A maze I drew in Notepad failed to load with "Unknown character" on row 1, even though it looked perfect. Notepad had added three invisible bytes (a byte order mark) at the start and `\r` at the end of every line. `MazeFile::load()` now strips both, and a self-test writes those exact bytes to prove it.
@@ -183,4 +185,4 @@ I leveled up on **File I/O and defensive programming**. I learned to treat every
 
 ### 🔮 Next Steps
 - **Showcase presentation** and the final Pull Request into `main`.
-- Future ideas: score by *extra moves* over the shortest route instead of turns, split the save/load screens out of `Menu` (now 640 lines), and save a Play mode game in progress.
+- Future ideas (in Backlog): score by *extra moves* over the shortest route instead of turns (#31), and save a Play mode game in progress (#33).

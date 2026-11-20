@@ -20,8 +20,9 @@ This document records how Maze Pathfinder changed during Week 4, the final week.
 - **Best scores** for Play mode are saved after every win and loaded at startup
 - Missing, empty, broken and even binary files are handled with clear messages, never a crash
 - A **How to play** screen, and consistent wording and numbering in every menu
+- **The Save and Load screens moved out of `Menu`** into a new `MazeFileMenu` class, so `Menu.cpp` went from 640 lines to 550
 - The self-test has **98 checks**
-- **Every Issue on the board is Done**
+- **Every planned Issue is Done.** Three future ideas are in Backlog.
 
 ---
 
@@ -63,6 +64,7 @@ A maze file is just the maze, drawn with the same symbols the program uses. That
 | **Bad-file tests** | #28 | Self-test checks for garbage, uneven, binary and overwritten files, plus a readable message for unprintable characters (below). |
 | **How to play** | #29 | Main menu option 4 explains each mode, the difficulties, every symbol (S G # . o P E X) and where files are saved. |
 | **Consistent menus** | #29 | **0 now exits** the main menu, matching every other menu where 0 goes back. Same wording and plurals everywhere. |
+| **`MazeFileMenu` class** | #32 | The Save and Load screens moved out of `Menu` into their own class. Nothing the user sees changed (see Refactoring). |
 
 ## 🧱 Updates to System Design
 
@@ -72,6 +74,7 @@ A maze file is just the maze, drawn with the same symbols the program uses. That
 |---|---|
 | `MazeFile` (namespace) | Everything about maze files: `isValidName()`, `withExtension()`, `save()`, `load()`, `listMazes()`, `getFolder()`. Functions only, no state, so a namespace fits better than a class. |
 | `ScoreBoard` (class) | Holds the best score per difficulty in a `std::map<Difficulty, int>`. `load()` reports what happened (`Loaded`, `NoFile` or `Repaired`), `save()` writes it, and `recordWin()` decides whether a win is a new best. It has **no console output**, so `Menu` decides what to say and the self-test can check every case. |
+| `MazeFileMenu` (class) | The Save and Load **screens**: asks for a file name, lists saved mazes, and explains problems. It holds a `Maze&` (a reference to `Menu`'s maze) and returns a `LoadResult` (`Loaded`, `NotLoaded` or `InputEnded`), so `Menu` only decides *what happens next*. |
 
 **Changes to existing classes**
 
@@ -81,19 +84,43 @@ A maze file is just the maze, drawn with the same symbols the program uses. That
 | `Maze` | Unknown characters that can't be printed are described: `(character code 0)`, `(a tab)` | A binary file used to print invisible bytes in its error |
 | `InputHelper` | Added `readText()` for file names | Same trim, re-ask and end-of-input rules as the other prompts |
 | `ResultView` | Now owns `countText()` ("1 move", "2 moves"), shared with `Menu` | Fixed "1 moves" in Solve results |
-| `Menu` | Save, file picker, best scores, How to play; `askText()`; a `ScoreBoard` member | The menus for the new features |
+| `Menu` | Best scores and How to play; `ScoreBoard` and `MazeFileMenu` members. The Save and Load screens moved out (#32). | Menu flow only, not file screens |
 
 **How the file features fit in**
 
 ```
 Menu
-  ├── MazeFile ── save()/load() ── mazes/*.txt
-  │      └── Maze::getLayout() / Maze::loadFromLayout()   (same validation as built-in mazes)
+  ├── MazeFileMenu (Save and Load screens, holds Maze&)
+  │      └── MazeFile ── save()/load() ── mazes/*.txt
+  │             └── Maze::getLayout() / Maze::loadFromLayout()   (same validation as built-in mazes)
   └── ScoreBoard ── load()/save() ── scores.txt
          └── recordWin() after each Play mode win (Game reports the turn count)
 ```
 
-As in Week 3, only `Menu` talks to the console. `MazeFile` and `ScoreBoard` return results and messages, which is what lets the self-test check every file problem without a person typing anything.
+Each piece has one job. `MazeFile` reads and writes files, `MazeFileMenu` talks to the user about them, and `Menu` decides what happens next. `MazeFile` and `ScoreBoard` print nothing and return results and messages, which is what lets the self-test check every file problem without a person typing anything.
+
+## 🧹 Refactoring: Objects and References (#32)
+
+By Wednesday, the save, load, scores and How to play screens had grown `Menu.cpp` from **364 lines to 640**: the same problem `ResultView` fixed in Week 3. I moved the Save and Load screens into a new `MazeFileMenu` class.
+
+| Before | After | Why it's better |
+|---|---|---|
+| `Menu::saveCurrentMaze()` and `Menu::chooseFileMaze()`, about 90 lines of file prompts inside `Menu` | `MazeFileMenu::saveMaze()` and `chooseAndLoad()` in their own `.h`/`.cpp` | `Menu` handles menu flow; file screens live in one place |
+| Both functions reached into `Menu`'s `m_running` flag through `askText()`/`askInt()` to stop the program when input ended | `MazeFileMenu` **returns** what happened: `saveMaze()` returns `false` if input ended, and `chooseAndLoad()` returns `Loaded`, `NotLoaded` or `InputEnded` | The new class doesn't need to know about `Menu` at all. `Menu` reads the result and decides, which makes the flow easier to follow. |
+| `Menu::askText()` existed only for the save screen | Removed | One less wrapper |
+| | `MazeFileMenu` holds a **`Maze&`** to `Menu`'s maze, declared after `m_maze` | A reference, not a copy: loading a file changes the one maze everything else uses. Members are built in declaration order, so the maze must exist first (the same rule as `ResultView`). |
+
+**Result:** `Menu.cpp` went from **640 to 550 lines**.
+
+**How I proved nothing changed:**
+- All **12 scripted menu sessions** were byte-for-byte identical.
+- I built the **previous version** side by side and ran both on **9 save and load scenarios**. All 9 matched exactly, including the files they saved. The scenarios covered:
+  - bad and reserved names, and replacing a file
+  - broken, empty and binary files
+  - no saved mazes, and going back from the file list
+  - cancelling a save
+  - input ending at the file name, the replace question and the file list
+- The self-test still passes **98 of 98**, and the build has **0 warnings**.
 
 ## ⚠️ Handling Files That Don't Exist or Aren't Right
 
@@ -120,7 +147,8 @@ As in Week 3, only `Menu` talks to the console. `MazeFile` and `ScoreBoard` retu
   - **Best scores (6 checks):** only fewer turns count, round trip, missing file, corrupt lines, duplicates, unwritable file
   - All file tests use a private temp folder that is deleted afterward, so testing never touches the user's real mazes or scores
 - **Menu tests:** every prompt was tested with good input, bad input, and input ending early. For best scores, five separate program runs in a row confirmed that scores really persist between runs: a first win, a tie, beating an old score, a corrupt file, and a read-only file.
-- **Regression:** the 12 fixed-seed scripted sessions from Week 3 were compared with the previous version after every Issue. The only differences were the new menu lines each Issue added.
+- **Regression:** the 12 fixed-seed scripted sessions from Week 3 were compared with the previous version after every Issue. The only differences were the new menu lines each Issue added, and the #32 refactor changed nothing at all.
+- **Final screenshots** are in `images/`: `final-run.png` (successful compilation) and `final-features.png` (the program running with its key features).
 
 **Bugs found and fixed this week**
 
@@ -145,11 +173,11 @@ As in Week 3, only `Menu` talks to the console. `MazeFile` and `ScoreBoard` retu
 
 | Requirement | Where it is in the project |
 |---|---|
-| 3+ classes beyond `main`, in `.h`/`.cpp` | 13 classes, counting the `PathResult` struct (`Menu`, `ResultView`, `Cell`, `Maze`, `Pathfinder`, `BfsPathfinder`, `AStarPathfinder`, `MazeGenerator`, `Player`, `Enemy`, `Game`, `ScoreBoard`, `PathResult`) plus helper namespaces, in 16 headers and 17 source files |
+| 3+ classes beyond `main`, in `.h`/`.cpp` | 14 classes, counting the `PathResult` struct (`Menu`, `ResultView`, `MazeFileMenu`, `Cell`, `Maze`, `Pathfinder`, `BfsPathfinder`, `AStarPathfinder`, `MazeGenerator`, `Player`, `Enemy`, `Game`, `ScoreBoard`, `PathResult`) plus helper namespaces, in 17 headers and 18 source files |
 | At least one vector | `Maze` stores its grid as `vector<vector<Cell>>`; paths are `vector<Cell*>`; `Menu` keeps `vector<unique_ptr<Pathfinder>>` |
-| Pointers / references / dynamic memory | `Cell*` parent pointers rebuild paths; `unique_ptr<Pathfinder>` gives polymorphism; `Enemy` holds a `Pathfinder&`; `ResultView` holds references to `Menu`'s members |
+| Pointers / references / dynamic memory | `Cell*` parent pointers rebuild paths; `unique_ptr<Pathfinder>` gives polymorphism; `Enemy` holds a `Pathfinder&`; `ResultView` and `MazeFileMenu` hold references to `Menu`'s members |
 | Persistent menu with a clear exit | The main menu loops until **0. Exit**, and running out of input also exits cleanly |
-| Multiple interacting objects | `Game` runs `Player` and `Enemy`; `Enemy` uses a `Pathfinder`; `Menu` connects `Maze`, `ResultView`, `MazeFile` and `ScoreBoard` |
+| Multiple interacting objects | `Game` runs `Player` and `Enemy`; `Enemy` uses a `Pathfinder`; `Menu` connects `Maze`, `ResultView`, `MazeFileMenu` and `ScoreBoard` |
 | Meaningful interaction | Solve, Compare and Play modes, plus Save, Load and How to play |
 | Input validation | `InputHelper` re-asks on every bad number, key, yes/no or blank line; file names are checked before saving |
 | File I/O: Save **and** Load, handles missing files | `MazeFile` (mazes) and `ScoreBoard` (best scores); see the table of file situations above |
@@ -161,11 +189,13 @@ As in Week 3, only `Menu` talks to the console. `MazeFile` and `ScoreBoard` retu
 - **Week 4 Issues** (created Monday 11/16, all on the board): **#25** Save a maze, **#26** Load a maze, **#27** Best scores, **#28** Save/Load tests, **#29** How to play and prompt polish. **#11** (Save and Load) was the parent feature.
 - Each Issue moved To Do → In Progress → Done as it was worked on. #28 and #29 started in Backlog and were moved to To Do once they were planned for this week, because Backlog is for ideas I won't finish in the course.
 - **Commits were spread across the week:** 6 on Monday (#25, #26) and 7 on Wednesday (#27, #28, #29), each one a single change with its Issue number.
-- **Pull Request #30** (the final one) merges all of Week 4, including this document, from `dev` into `main` and is linked to the board.
-- **Board at the end of the course:** every Issue Done, nothing left in To Do or In Progress.
+- **Pull Request #30** merged #25–#29 and this document from `dev` into `main` on Wednesday, linked to the board.
+- On Wednesday I added my three future ideas to **Backlog** (#31, #32, #33) so the board shows what I'd do next. On Friday I pulled **#32** (the `Menu` split) back in for the final milestone's objects and refactoring step, and it went Backlog → In Progress → Done.
+- **Pull Request #34** (the final one) merges #32 and the final screenshots into `main`.
+- **Board at the end of the course:** every planned Issue Done, nothing in To Do or In Progress, and #31 and #33 in Backlog as future ideas.
 
 ## 🔮 Possible Future Improvements
 
-- **Fairer scores:** count *extra moves* compared with the shortest route (0 = perfect), since a lucky short maze makes an easier record.
-- **Split `Menu`:** it grew from 364 to 640 lines with the file features. The save and load screens could move into their own class, the way `ResultView` took the result printing in Week 3.
-- **Save a game in progress** in Play mode, not just finished results.
+- **Fairer scores (#31):** count *extra moves* compared with the shortest route (0 = perfect), since a lucky short maze makes an easier record.
+- **Save a game in progress (#33)** in Play mode, not just finished results.
+- **Weighted search:** add Dijkstra's algorithm with mazes where some cells cost more to cross. It would plug straight into the `Pathfinder` base class.
