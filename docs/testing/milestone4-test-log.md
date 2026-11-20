@@ -195,3 +195,14 @@ Saved in `images/`:
 - `final-features-compare.png`: Compare mode on the Medium maze. A* explored 27 fewer cells than BFS (40% less), and both found the 30-move shortest path.
 
 The menu choices were typed from a file, so they don't appear on screen. Everything else is the program's real output.
+
+## Final testing: the whole application (Friday 11/20)
+
+| Check | Result |
+|---|---|
+| **Fresh clone:** `git clone` of the public repo (no sign-in), then build **Debug** and **Release** x64 | ✅ Both build, no compiler warnings |
+| Self-test on the Release build | ✅ 98 passed, 0 failed |
+| **"Try to break it":** 12 runs of 3,000 random inputs each (numbers, `-1`, `99999999999`, letters, blank and whitespace lines, a 5,000-character line, tabs, Unicode, `CON`, `bad:name`, W/A/S/D/Q, y/n) | ✅ Every run ended with "Thanks for playing. Goodbye!", no crash, no hang |
+| The same, but without `0` (so runs can't exit early): 8 runs × 3,000 inputs | ✅ Exit code 0 every time. About 270 Play mode games and 280 solves played through, plus random saves and loads. |
+| Instructor-posted Issues | None open (checked the Issues list for any author other than me) |
+| Sensitive data | None committed: no passwords, keys or tokens in any tracked file or in the history |
